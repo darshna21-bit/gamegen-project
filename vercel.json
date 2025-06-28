@@ -1,8 +1,7 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+  "functions": {
+    "api/generate-image.js": {
+      "includeFiles": "node_modules/axios/**"
     }
-  ]
+  }
 }
