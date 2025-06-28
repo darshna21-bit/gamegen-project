@@ -11,18 +11,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Prompt is required' });
   }
   try {
-    const startResponse = await axios.post('https://api.replicate.com/v1/predictions', {
-      version: '7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc',
-      input: { 
-        prompt: `pixel art of a ${userPrompt}, white background`,
-        negative_prompt: "blurry, abstract, text, letters, watermark, low quality"
-      },
-    }, {
-      headers: {
-         'Authorization': `Token ${process.env.REACT_API_TOKEN}`,
-         'Content-Type': 'application/json',
-      },
-    });
+    // In api/generate-image.js
+    const startResponse = await 
+    axios.post('https://api.replicate.com/v1/predictions', {
+    // Use a fast, FREE model perfect for emojis/icons
+    version:
+  'de1f499fe6821182281c74147d25687714856b37016e7520330626002f231e06', 
+    input: { 
+      prompt: `An emoji of a ${userPrompt}, pixel art style`,
+    },
+   }, {
+  headers: {
+     'Authorization': `Token ${process.env.REPLICATE_API_TOKEN}`,
+     'Content-Type': 'application/json',
+  },
+});
+    
 
     let prediction = startResponse.data;
     const predictionId = prediction.id;
