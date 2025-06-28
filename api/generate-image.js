@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   }
   try {
     const startResponse = await axios.post('https://api.replicate.com/v1/predictions', {
-      version: '39ab3f6932f44201153784f8841a4a82ebd33054a36f1855a0e05139E0533591',
+      version: 'b14b744b1e51f473859d57a27541613149d4128f09079559e23583597816174a',
       input: { 
         prompt: `pixel art of a ${userPrompt}, white background`,
         negative_prompt: "blurry, abstract, text, letters, watermark, low quality"
