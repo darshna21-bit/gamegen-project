@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       },
     }, {
       headers: {
-         'Authorization': `Token ${process.env.REACT_APP_REPLICATE_API_TOKEN}`,
+         'Authorization': `Token ${process.env.REACT_API_TOKEN}`,
          'Content-Type': 'application/json',
       },
     });
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       await sleep(1000);
       const pollResponse = await axios.get(`https://api.replicate.com/v1/predictions/${predictionId}`, {
         headers: {
-          'Authorization': `Token ${process.env.REACT_APP_REPLICATE_API_TOKEN}`,
+          'Authorization': `Token ${process.env.REACT_API_TOKEN}`,
         },
       });
       prediction = pollResponse.data;
