@@ -98,7 +98,7 @@
 
 body {
   position: relative;
-  background: url('background.jpg');
+  background: url('./background.jpg');
   min-height: 100vh;
   max-height: 100vh;
   display: grid;
@@ -272,7 +272,7 @@ main .side-controls--container span.none {display: none;}
   overflow: hidden;
 }
 .mole {
-  background-image: url(mole.png);
+  background-image: url(./mole.png);
   position: relative;
   height: 100%;
   width: 100%;
@@ -283,6 +283,7 @@ main .side-controls--container span.none {display: none;}
   transition: all 0.5s;
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
   top: 100%;
+  z-index: 2;
 }
 .up .mole {top: 10%;}
 
@@ -362,6 +363,7 @@ main .side-controls--container span.none {display: none;}
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
   display: none;
   width: 100%;
+
 }
 .scoreboard * {
   font-family: 'Titan One', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

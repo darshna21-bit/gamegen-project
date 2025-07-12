@@ -12,7 +12,7 @@
 
 <body>
     
-    <form class="modal">
+    <form class="modal"  style="display: none;">
     <div class="title"><span>Welcome to</span><h1>Wack-A-Mole</h1></div>
     <div class="select">select difficulty:</div>
     <div class="buttons">
@@ -82,47 +82,59 @@
                             <span class="hard"></span>
                         </div>
                     </div>
-                    <a href="https://www.mitri-dev.xyz/" class="side-controls--container-2">
+                    <!-- <a href="https://www.mitri-dev.xyz/" class="side-controls--container-2">
                         <img src="./css/icon.svg" alt="mitri-dvp-icon" srcset="">
-                        <p>mitri.dvp</p>
-                    </a>
+                        <p>mitri.dvp</p> -->
+                    <!-- </a> -->
                 </span>
             </main>
             <div class="controls">
                 <div class="time">
-                    <p>Time</p>
-                    <span>-</span>
+                    <p style="top: 10px; font-weight: 750;font-size:29px;">Time</p>
+                    <span style="position: absolute; top: 39px; left: 48px; padding-top: 3px;">-</span>
                 </div>
                 <div class="score">
-                    <p>Score</p>
-                    <span>-</span>
+                    <p style="top: 10px; font-weight: 740;font-size:27px;">Score</p>
+                    <span style="position: absolute; top: 39px; left: 54px; padding-top: 3px;">-</span>
                 </div>
-                <div class="start">START</div>
+                 <!-- --- NEW ADDITION: Best Score Display --- -->
+                <div class="best-score">
+                    <p>Best</p>
+                    <span>0</span> <!-- Default best score -->
+                </div>
+                <!-- --- END NEW ADDITION --- -->
+
+                <div class="start" style="position: absolute; left: 520px;">START</div>
             </div>
         </div>
     </div>
+    <div id="simple-game-over" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background-color: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px; z-index: 100;">
+    <h2 style="color: red; font-size: 2em; margin-bottom: 15px;">GAME OVER</h2>
+    <button id="simple-retry-button" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.2em;">Retry?</button>
+</div>
 
-        <div class="enterName">
+<!-- <script src="js/script.js"></script> -->
+
+        <!-- <div class="enterName">
             <h2>GAME OVER</h2>
             <h3>Enter your name!</h3><br>
             <input type="text">
             <h3 class="retry">Retry?</h3><br>
-        </div>
+        </div> -->
     
-        <div class="scoreboard">
+        <!-- <div class="scoreboard">
             <table class="scores"></table>
-        </div>
-        <table>
+        </div> -->
+        <!-- <table>
             <tbody>
             </tbody>
-        </table>
+        </table> -->
 
-    <a href="https://www.mitri-dvp.com/" class="powered-by"> 
+    <!-- <a href="https://www.mitri-dvp.com/" class="powered-by"> 
       <img src="./css/icon.svg" alt="mitri-dvp-icon" srcset="">
       <p>mitri.dvp</p>
-    </a>
+    </a> -->
         
-    <script src="js/script.js"></script>
+<script src="js/script.js"></script>
 </body>
-
 </html>

@@ -6,7 +6,7 @@ const gameTemplates = [
   { id: 'flappy-bird', name: 'Flappy Bird', description: 'Help the bird fly through pipes!', thumbnail: 'flappy-bird-thumb.png' },
   { id: 'speed-runner', name: 'Speed Runner', description: 'Run and jump to avoid obstacles.', thumbnail: 'speed-runner-thumb.png' },
   { id: 'whack-the-mole', name: 'Whack-the-Mole', description: 'Test your reflexes, whack the moles!', thumbnail: 'whack-mole-thumb.png' },
-  { id: 'match-3', name: 'Simple Match-3', description: 'Match colorful gems to clear the board.', thumbnail: 'match3-thumb.png' },
+  { id: 'simple-match-3', name: 'Simple Match-3', description: 'Match colorful gems to clear the board.', thumbnail: 'match3-thumb.png' },
   { id: 'crossy-road', name: 'Crossy Road', description: 'Cross the road, avoid traffic and rivers!', thumbnail: 'crossy-road-thumb.png' },
 ];
 

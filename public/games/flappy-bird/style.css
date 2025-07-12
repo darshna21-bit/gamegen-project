@@ -1,8 +1,8 @@
-
+/* style.css */
 * {
     margin: 0;
     padding: 0;
-
+    box-sizing: border-box; /* Added for consistent box model */
 }
 
 .body {
@@ -25,26 +25,30 @@
     src: url(assets//text/O4B.ttf);
 }
 
-.game-frame{
+.game-frame {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%; /* Or a specific height if needed */
-    width: 100%; /* Or a specific width if needed */
+    height: 100%;
+    /* Or a specific height if needed */
+    width: 100%;
+    /* Or a specific width if needed */
 }
 
 /* Game Display */
 .game-container {
-    width: 500px; /* Your fixed width */
-    height: 730px; /* Your fixed height */
-    position: relative; /* Changed from absolute */
+    width: 500px;
+    /* Your fixed width */
+    height: 730px;
+    /* Your fixed height */
+    position: relative;
+    /* Changed from absolute */
     overflow: hidden;
 }
 
 
 .hidden {
     display: none;
-
 }
 
 /* Start Menu CSS */
@@ -63,13 +67,16 @@
     0% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.1);
     }
+
     100% {
         transform: scale(1);
     }
 }
+
 .start-menu-container .start-menu-text {
     position: absolute;
     top: 50%;
@@ -82,8 +89,8 @@
     -webkit-animation: startMenuMove 2s infinite;
     -webkit-background-clip: text;
     background-clip: text;
-
 }
+
 /* Game Over CSS */
 .game-over-container {
     position: absolute;
@@ -108,23 +115,31 @@
     -webkit-animation: startMenuMove 2s infinite;
     -webkit-background-clip: text;
     background-clip: text;
-
 }
 
 
 .game-over-container .score-container {
     position: absolute;
     background-color: #dfd996;
-    box-shadow: 
-        4px 0 0 #dfd996,    /* Right white shadow */
-        -4px 0 0 #dfd996,   /* Left white shadow */
-        0 -4px 0 #dfd996,   /* Top white shadow */
-        0 4px 0 #dfd996,    /* Bottom white shadow */
-        6px 0 0 chocolate,     /* Right blue shadow */
-        -6px 0 0 chocolate,    /* Left blue shadow */
-        0 -6px 0 chocolate,    /* Top blue shadow */
-        0 6px 0 chocolate,     /* Bottom blue shadow */
-        0 0 0 4px chocolate;   /* Outline blue shadow */
+    box-shadow:
+        4px 0 0 #dfd996,
+        /* Right white shadow */
+        -4px 0 0 #dfd996,
+        /* Left white shadow */
+        0 -4px 0 #dfd996,
+        /* Top white shadow */
+        0 4px 0 #dfd996,
+        /* Bottom white shadow */
+        6px 0 0 chocolate,
+        /* Right blue shadow */
+        -6px 0 0 chocolate,
+        /* Left blue shadow */
+        0 -6px 0 chocolate,
+        /* Top blue shadow */
+        0 6px 0 chocolate,
+        /* Bottom blue shadow */
+        0 0 0 4px chocolate;
+    /* Outline blue shadow */
     margin: 8px auto;
     width: 250px;
     height: 100px;
@@ -139,11 +154,11 @@
 
 .game-over-container .score-container .game-over-score {
     font-smooth: never;
-    -webkit-font-smoothing : none;
+    -webkit-font-smoothing: none;
     position: absolute;
     font-family: 'FlappyBirdFontRegular';
     font-size: 20px;
-    color:chocolate;
+    color: chocolate;
 }
 
 .score-container .best {
@@ -179,14 +194,14 @@
 }
 
 
-#best-score img{
+#best-score img {
     padding-right: 2px;
-
 }
 
 #score img {
     padding-right: 2px;
 }
+
 /* Game Play CSS */
 
 /* Game Background */
@@ -194,11 +209,11 @@
     background-image: url("assets/images/background.png");
     background-color: #4dc1cb;
     background-position: 0 160px;
-    background-repeat:repeat-x;
-     width: 500px;
-     height: 580px;
-     position: absolute;
-     z-index: -1;
+    background-repeat: repeat-x;
+    width: 500px;
+    height: 580px;
+    position: absolute;
+    z-index: 0;
 }
 
 .ground {
@@ -217,19 +232,21 @@
     from {
         background-position: 10000% top;
     }
+
     to {
         background-position: 0% top;
     }
-  }
-  
-  @-webkit-keyframes groundMove {
+}
+
+@-webkit-keyframes groundMove {
     from {
         background-position: 10000% top;
     }
+
     to {
         background-position: 0% top;
     }
-  }
+}
 
 .ground-moving {
     animation: groundMove 104s linear infinite;
@@ -242,7 +259,6 @@
     position: absolute;
     top: 580px;
     z-index: 2;
-
 }
 
 
@@ -252,25 +268,28 @@
     background-repeat: no-repeat;
     background-size: cover;
     position: absolute;
-    width: 43px;
-    height: 30px; 
     z-index: 3;
+    /* border: 2px solid red !important;  */
+    /* Add this temporarily */
+    /* Optional: For consistent centering regardless of image size */
+    /* If you uncomment this, you might need to adjust BIRD_START_X and BIRD_START_Y in app.js
+        to be the desired *center* coordinates, not bottom-left. */
+    /* transform: translate(-50%, -50%); */
+    /* transform-origin: center center; */
 }
 
-/* Bird flying states */
+/* Bird flying states - REMOVE BACKGROUND-IMAGE FROM HERE */
 .bird-downflap {
-    background-image: url("assets/images/yellowbird-downflap.png");
+    /* background-image: url("assets/images/yellowbird-downflap.png"); */ /* REMOVED */
 }
 
 .bird-midflap {
-    background-image: url("assets/images/yellowbird-midflap.png");
+    /* background-image: url("assets/images/yellowbird-midflap.png"); */ /* REMOVED */
 }
 
 .bird-upflap {
-    background-image: url("assets/images/yellowbird-upflap.png");
+    /* background-image: url("assets/images/yellowbird-upflap.png"); */ /* REMOVED */
 }
-
-
 .pipe {
     background-image: url("assets/images/pipe.png");
     position: absolute;
@@ -291,13 +310,17 @@
 .topPipe::after {
     content: '';
     position: absolute;
-    top: 100%; /* Position directly below the main element */
+    top: 100%;
+    /* Position directly below the main element */
     left: 0;
     width: 100%;
-    height: 100px; /* Adjust this for how much extension you need */
-    background-image: inherit; /* Use the same image */
+    height: 100px;
+    /* Adjust this for how much extension you need */
+    background-image: inherit;
+    /* Use the same image */
     background-repeat: no-repeat;
-    transform: scaleY(-1); /* Flip the image vertically */
+    transform: scaleY(-1);
+    /* Flip the image vertically */
 }
 
 
@@ -308,10 +331,12 @@
         background-color: transparent;
         opacity: 1;
     }
+
     50% {
         background-color: white;
         opacity: 0.2;
     }
+
     100% {
         background-color: transparent;
         opacity: 1;
