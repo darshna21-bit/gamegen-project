@@ -1,0 +1,364 @@
+/* style.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Added for consistent box model */
+}
+
+.body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@font-face {
+    font-family: 'FlappyBirdFont';
+    src: url(assets/text/FlappyBirdy.ttf);
+}
+
+@font-face {
+    font-family: 'FlappyBirdFontRegular';
+    src: url(assets//text/O4B.ttf);
+}
+
+.game-frame {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    /* Or a specific height if needed */
+    width: 100%;
+    /* Or a specific width if needed */
+}
+
+/* Game Display */
+.game-container {
+    width: 500px;
+    /* Your fixed width */
+    height: 730px;
+    /* Your fixed height */
+    position: relative;
+    /* Changed from absolute */
+    overflow: hidden;
+}
+
+
+.hidden {
+    display: none;
+}
+
+/* Start Menu CSS */
+.start-menu-container {
+    position: absolute;
+    width: 500px;
+    height: 730px;
+    z-index: 5;
+    background-image: url(assets/images/message.png);
+    background-repeat: no-repeat;
+    background-size: 60%;
+    background-position: 50% 20%;
+}
+
+@keyframes startMenuMove {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.start-menu-container .start-menu-text {
+    position: absolute;
+    top: 50%;
+    left: 35%;
+    font-family: 'FlappyBirdFont';
+    font-size: 30px;
+    color: white;
+    text-align: center;
+    animation: startMenuMove 2s infinite;
+    -webkit-animation: startMenuMove 2s infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+/* Game Over CSS */
+.game-over-container {
+    position: absolute;
+    width: 500px;
+    height: 730px;
+    z-index: 5;
+    background-image: url(assets/images/gameover.png);
+    background-repeat: no-repeat;
+    background-size: 60%;
+    background-position: 50% 20%;
+}
+
+.game-over-container .game-over-text {
+    position: absolute;
+    top: 60%;
+    left: 25%;
+    font-family: 'FlappyBirdFont';
+    font-size: 40px;
+    color: white;
+    text-align: center;
+    animation: startMenuMove 2s infinite;
+    -webkit-animation: startMenuMove 2s infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+
+.game-over-container .score-container {
+    position: absolute;
+    background-color: #dfd996;
+    box-shadow:
+        4px 0 0 #dfd996,
+        /* Right white shadow */
+        -4px 0 0 #dfd996,
+        /* Left white shadow */
+        0 -4px 0 #dfd996,
+        /* Top white shadow */
+        0 4px 0 #dfd996,
+        /* Bottom white shadow */
+        6px 0 0 chocolate,
+        /* Right blue shadow */
+        -6px 0 0 chocolate,
+        /* Left blue shadow */
+        0 -6px 0 chocolate,
+        /* Top blue shadow */
+        0 6px 0 chocolate,
+        /* Bottom blue shadow */
+        0 0 0 4px chocolate;
+    /* Outline blue shadow */
+    margin: 8px auto;
+    width: 250px;
+    height: 100px;
+    top: 30%;
+    left: 25%;
+    z-index: 5;
+    background-repeat: no-repeat;
+    background-size: 60%;
+    background-position: 50% 20%;
+    border-radius: 10px;
+}
+
+.game-over-container .score-container .game-over-score {
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    position: absolute;
+    font-family: 'FlappyBirdFontRegular';
+    font-size: 20px;
+    color: chocolate;
+}
+
+.score-container .best {
+    top: 10%;
+    left: 10%;
+}
+
+.score-container .score {
+    top: 10%;
+    left: 50%;
+}
+
+#score {
+    position: absolute;
+    top: 30px;
+    left: 0px;
+    background-color: #b4ae6d;
+    padding: 8px 12px;
+    display: flex;
+    min-width: 80px;
+    justify-content: center;
+}
+
+#best-score {
+    position: absolute;
+    top: 30px;
+    left: 0px;
+    background-color: #b4ae6d;
+    padding: 8px 12px;
+    display: flex;
+    min-width: 80px;
+    justify-content: center;
+}
+
+
+#best-score img {
+    padding-right: 2px;
+}
+
+#score img {
+    padding-right: 2px;
+}
+
+/* Game Play CSS */
+
+/* Game Background */
+.sky {
+    background-image: url("assets/images/background.png");
+    background-color: #4dc1cb;
+    background-position: 0 160px;
+    background-repeat: repeat-x;
+    width: 500px;
+    height: 580px;
+    position: absolute;
+    z-index: 0;
+}
+
+.ground {
+    background-color: #dfd996;
+    background-image: url("assets/images/base.png");
+    background-repeat: repeat-x;
+    width: 500px;
+    height: 150px;
+    position: absolute;
+    top: 580px;
+    z-index: 2;
+}
+
+
+@keyframes groundMove {
+    from {
+        background-position: 10000% top;
+    }
+
+    to {
+        background-position: 0% top;
+    }
+}
+
+@-webkit-keyframes groundMove {
+    from {
+        background-position: 10000% top;
+    }
+
+    to {
+        background-position: 0% top;
+    }
+}
+
+.ground-moving {
+    animation: groundMove 104s linear infinite;
+    -webkit-animation: groundMove 104s infinite linear;
+    background-color: #dfd996;
+    background-image: url("assets/images/base.png");
+    background-repeat: repeat-x;
+    width: 500px;
+    height: 150px;
+    position: absolute;
+    top: 580px;
+    z-index: 2;
+}
+
+
+
+/* Game Elements */
+.bird {
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+    z-index: 3;
+    /* border: 2px solid red !important;  */
+    /* Add this temporarily */
+    /* Optional: For consistent centering regardless of image size */
+    /* If you uncomment this, you might need to adjust BIRD_START_X and BIRD_START_Y in app.js
+        to be the desired *center* coordinates, not bottom-left. */
+    /* transform: translate(-50%, -50%); */
+    /* transform-origin: center center; */
+}
+
+/* Bird flying states - REMOVE BACKGROUND-IMAGE FROM HERE */
+.bird-downflap {
+    /* background-image: url("assets/images/yellowbird-downflap.png"); */ /* REMOVED */
+}
+
+.bird-midflap {
+    /* background-image: url("assets/images/yellowbird-midflap.png"); */ /* REMOVED */
+}
+
+.bird-upflap {
+    /* background-image: url("assets/images/yellowbird-upflap.png"); */ /* REMOVED */
+}
+.pipe {
+    background-image: url("assets/images/pipe.png");
+    position: absolute;
+    width: 60px;
+    height: 300px;
+    z-index: 1;
+}
+
+.topPipe {
+    background-image: url("assets/images/pipe.png");
+    position: absolute;
+    width: 60px;
+    height: 300px;
+    transform: rotate(180deg) scaleX(-1);
+    z-index: 1;
+}
+
+.topPipe::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    /* Position directly below the main element */
+    left: 0;
+    width: 100%;
+    height: 100px;
+    /* Adjust this for how much extension you need */
+    background-image: inherit;
+    /* Use the same image */
+    background-repeat: no-repeat;
+    transform: scaleY(-1);
+    /* Flip the image vertically */
+}
+
+
+/* Effects */
+/* Flash */
+@keyframes flash {
+    0% {
+        background-color: transparent;
+        opacity: 1;
+    }
+
+    50% {
+        background-color: white;
+        opacity: 0.2;
+    }
+
+    100% {
+        background-color: transparent;
+        opacity: 1;
+    }
+}
+
+
+.flash {
+    background-color: white;
+    opacity: 0.2;
+    position: absolute;
+    width: 500px;
+    height: 730px;
+    z-index: 4;
+}
+
+
+.score {
+    position: absolute;
+    top: 20%;
+    left: 48%;
+    font-size: 40px;
+    color: white;
+    z-index: 5;
+}

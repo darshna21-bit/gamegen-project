@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>Flappy Bird</title>
+        <script type="module" src="src/app.js" charset="utf-8"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="game-frame">
+            <div class="game-container">
+                <div id="start-menu" class="start-menu-container">
+                    <div id=start-menu-text class="start-menu-text">
+                        <span>Press Space to Start</span>
+                    </div>
+                </div>
+                <div id="game-over" class="hidden">
+                    <div class="score-container">
+                        <div id="game-over-score" class="game-over-score score">
+                            <span>Score: </span><span id="score"></span>
+                        </div>
+                        <div id="game-over-best-score" class="game-over-score best">
+                            <span>Best: </span><span id="best-score"></span>
+                        </div>
+                    </div>
+                    <div id="game-over-text" class="game-over-text">
+                        <span>Press Space to Restart</span>
+                    </div>
+                </div>
+                
+                <!-- --- FIX: Move .bird and #score-container out of .sky --- -->
+                <!-- .sky will now only be the background element -->
+                <div class="sky"></div> 
+                
+                <!-- These elements are now direct children of .game-container -->
+                <div id="score-container" class="score"></div> 
+                <div class="bird"></div> 
+                <!-- --- END FIX --- -->
+                
+                <div class="ground ground-moving "></div>
+            </div>
+        </div>
+    </body>
+</html>

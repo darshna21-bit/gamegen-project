@@ -1,0 +1,140 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Whack-A-Mole</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="./css/hammer2.png">
+    <meta httpEquiv="Content-Type" content="text/html"/>
+    <meta charSet="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+</head>
+
+<body>
+    
+    <form class="modal"  style="display: none;">
+    <div class="title"><span>Welcome to</span><h1>Wack-A-Mole</h1></div>
+    <div class="select">select difficulty:</div>
+    <div class="buttons">
+        <button class="e">Easy</button>
+        <button class="m">Medium</button>
+        <button class="h">Hard</button>
+    </div>
+    <div></div>
+    <div></div>
+    <div></div>
+    </form>
+
+    <div class="container">
+        <div class="view">
+            <!-- <div class="title">
+                <h1>Wack-A-Mole</h1>
+            </div> -->
+            <main>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <div class="hole">
+                    <img src="css/hole.png">
+                    <div class="mole"></div>
+                </div>
+                <span class="side-controls">
+                    <div class="side-controls--container">
+                        <div class="velocity-level">
+                            <img src="css/velocity-mole.svg" alt="velocity">
+                            <span class="">2</span>
+                        </div>
+                        <div class="time-level">
+                            <img src="css/timer.svg" alt="timer">
+                            <span class="">10</span>
+                        </div>
+                        <div class="volume-level">
+                            <img src="css/volume.svg" alt="volume">
+                            <span class="hard"></span>
+                        </div>
+                    </div>
+                    <!-- <a href="https://www.mitri-dev.xyz/" class="side-controls--container-2">
+                        <img src="./css/icon.svg" alt="mitri-dvp-icon" srcset="">
+                        <p>mitri.dvp</p> -->
+                    <!-- </a> -->
+                </span>
+            </main>
+            <div class="controls">
+                <div class="time">
+                    <p style="top: 10px; font-weight: 750;font-size:29px;">Time</p>
+                    <span style="position: absolute; top: 39px; left: 48px; padding-top: 3px;">-</span>
+                </div>
+                <div class="score">
+                    <p style="top: 10px; font-weight: 740;font-size:27px;">Score</p>
+                    <span style="position: absolute; top: 39px; left: 54px; padding-top: 3px;">-</span>
+                </div>
+                 <!-- --- NEW ADDITION: Best Score Display --- -->
+                <div class="best-score">
+                    <p>Best</p>
+                    <span>0</span> <!-- Default best score -->
+                </div>
+                <!-- --- END NEW ADDITION --- -->
+
+                <div class="start" style="position: absolute; left: 520px;">START</div>
+            </div>
+        </div>
+    </div>
+    <div id="simple-game-over" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background-color: rgba(0,0,0,0.7); padding: 20px; border-radius: 10px; z-index: 100;">
+    <h2 style="color: red; font-size: 2em; margin-bottom: 15px;">GAME OVER</h2>
+    <button id="simple-retry-button" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.2em;">Retry?</button>
+</div>
+
+<!-- <script src="js/script.js"></script> -->
+
+        <!-- <div class="enterName">
+            <h2>GAME OVER</h2>
+            <h3>Enter your name!</h3><br>
+            <input type="text">
+            <h3 class="retry">Retry?</h3><br>
+        </div> -->
+    
+        <!-- <div class="scoreboard">
+            <table class="scores"></table>
+        </div> -->
+        <!-- <table>
+            <tbody>
+            </tbody>
+        </table> -->
+
+    <!-- <a href="https://www.mitri-dvp.com/" class="powered-by"> 
+      <img src="./css/icon.svg" alt="mitri-dvp-icon" srcset="">
+      <p>mitri.dvp</p>
+    </a> -->
+        
+<script src="js/script.js"></script>
+</body>
+</html>

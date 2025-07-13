@@ -1,0 +1,15 @@
+# Ignore all node_modules in any subfolder
+**/node_modules/
+
+# Ignore dependency lock files (optional)
+**/package-lock.json
+**/yarn.lock
+
+# Ignore logs and system files
+*.log
+.DS_Store
+Thumbs.db
+
+# Ignore build/dist folders
+build/
+dist/

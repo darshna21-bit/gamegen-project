@@ -1,0 +1,63 @@
+body {
+    text-align: center;
+}
+/* Add this to your css/style.css file for Crossy Road */
+
+#game-info-display {
+    position: absolute; /* Position it relative to the body or a parent container */
+    top: 8px; /* Adjust as needed */
+    left: 50%;
+    transform: translateX(-50%); /* Center horizontally */
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    color: #fff; /* White text */
+    font-family: 'Arial', sans-serif; /* A clear font */
+    font-size: 20px; /* Adjust font size */
+    padding: 10px 20px; /* Padding inside the box */
+    border-radius: 8px; /* Slightly rounded corners */
+    z-index: 10; /* Ensure it's above the canvas */
+    white-space: nowrap; /* Prevent text from wrapping */
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
+}
+/* NEW CSS for game controls and buttons */
+#game-controls {
+    position: absolute;
+    bottom: 13px; /* Adjust vertical position as needed */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex; /* Arrange buttons in a row */
+    gap: 20px; /* Space between buttons */
+    z-index: 10; /* Ensure it's above the canvas */
+}
+
+#startButton, #pauseButton {
+    padding: 15px 30px;
+    font-size: 24px;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    color: #fff;
+    background-color: #4CAF50; /* Green for START */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+    transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+#pauseButton {
+    background-color: #f44336; /* Red for PAUSE */
+}
+
+#startButton:hover, #pauseButton:hover {
+    background-color: #66BB6A; /* Lighter green on hover */
+    transform: translateY(-2px); /* Slight lift effect */
+}
+
+#pauseButton:hover {
+    background-color: #ef5350; /* Lighter red on hover */
+}
+
+#startButton:active, #pauseButton:active {
+    transform: translateY(0); /* Press down effect */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
