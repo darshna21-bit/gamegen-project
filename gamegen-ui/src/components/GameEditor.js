@@ -16,9 +16,9 @@ const gameConfigs = {
       { name: 'Game Speed', key: 'speed', min: 1, max: 10, step: 0.5, defaultValue: 3 },
     ],
     aiAssets: [
-      { type: 'character', label: 'Main Character (Bird)', promptPlaceholder: 'e.g., generate pink pixel robot with wings', defaultAssetPath: '/games/flappy-bird/assets/images/yellowbird-midflap.png' },
-      { type: 'obstacle', label: 'Pipe Style', promptPlaceholder: 'e.g., rusty red pipes, futuristic blue tubes', defaultAssetPath: '/games/flappy-bird/assets/images/pipe.png' },
-      { type: 'background', label: 'Background', promptPlaceholder: 'e.g., pixel art city skyline, spooky night forest', defaultAssetPath: '/games/flappy-bird/assets/images/background.png' },
+      { type: 'character', label: 'Main Character (Bird)', promptPlaceholder: 'e.g., a blue bird', defaultAssetPath: '/games/flappy-bird/assets/images/yellowbird-midflap.png' },
+      { type: 'obstacle', label: 'Pipe Style', promptPlaceholder: 'e.g., grey pipes', defaultAssetPath: '/games/flappy-bird/assets/images/pipe.png' },
+      { type: 'background', label: 'Background', promptPlaceholder: 'e.g., dark forest', defaultAssetPath: '/games/flappy-bird/assets/images/background.png' },
     ],
     difficultyPresets: {
       'simple': { gravity: 0.3, speed: 2, pipeGap: 500 },
@@ -37,7 +37,7 @@ const gameConfigs = {
     aiAssets: [
       // These entries are already present in your provided code.
       // We just need to ensure the prompt placeholders are good for the AI server.
-      { type: 'moleCharacter', label: 'Mole Character', promptPlaceholder: 'e.g., an alien mole, a cute hamster, a skull', defaultAssetPath: '/games/Whack-A-Mole/css/mole.png' },
+      { type: 'moleCharacter', label: 'Mole Character', promptPlaceholder: 'e.g., an alien mole, a skull', defaultAssetPath: '/games/Whack-A-Mole/css/mole.png' },
       { type: 'ground', label: 'Ground Texture', promptPlaceholder: 'e.g., muddy farm ground, grey stone, snowy landscape', defaultAssetPath: '/games/Whack-A-Mole/css/background.png' },
     ],
     difficultyPresets: {
@@ -55,8 +55,8 @@ const gameConfigs = {
       { name: 'Obstacle Spawn Delay (ms)', key: 'obstacleSpawnDelay', min: 500, max: 3000, step: 100, defaultValue: 1500 },
     ],
     aiAssets: [
-      { type: 'character', label: 'Main Character (Player)', promptPlaceholder: 'e.g., a futuristic space car', defaultAssetPath: '/games/speed-runner/assets/images/ships/ship3.png' },
-      { type: 'obstacle', label: 'Obstacle Style', promptPlaceholder: 'e.g., spiky red barriers, floating green energy balls', defaultAssetPath: '' },
+      { type: 'character', label: 'Main Character (Player)', promptPlaceholder: 'e.g., aeroplane', defaultAssetPath: '/games/speed-runner/assets/images/ships/ship3.png' },
+      { type: 'obstacle', label: 'Obstacle Style', promptPlaceholder: 'e.g., blue boxes', defaultAssetPath: '' },
     ],
     difficultyPresets: {
       'simple': { playerSpeedX: 8, obstacleSpawnDelay: 2500 },
@@ -75,8 +75,8 @@ const gameConfigs = {
       { name: 'Game Duration (s)', key: 'gameDuration', min: 15, max: 120, step: 15, defaultValue: 60 },
     ],
     aiAssets: [
-      { type: 'background', label: 'Background Image', promptPlaceholder: 'e.g., an enchanted forest, deep space nebula', defaultAssetPath: '/games/simple-match-3/background.jpg' },
-      { type: 'gemSet', label: 'Gem/Candy Style', promptPlaceholder: 'e.g., shiny metallic gears, cute pixel art fruits', defaultAssetPath: '' },
+      { type: 'background', label: 'Background Image', promptPlaceholder: 'e.g., a sunny day', defaultAssetPath: '/games/simple-match-3/background.jpg' },
+      { type: 'gemSet', label: 'Gem/Candy Style', promptPlaceholder: 'e.g.,cute pixel art fruits', defaultAssetPath: '' },
     ],
     difficultyPresets: {
       'simple': { rows: 7, columns: 7, scorePerMatch: 20, gameDuration: 120 },
@@ -95,8 +95,8 @@ const gameConfigs = {
       { name: 'Game Duration (s)', key: 'gameDuration', min: 60, max: 300, step: 30, defaultValue: 180 },
     ],
     aiAssets: [
-      { type: 'character', label: 'Main Character (Player)', promptPlaceholder: 'e.g., a jumping pixel frog, a tiny medieval knight', defaultAssetPath: '/games/crossy-road/images/char-boy.png' },
-      { type: 'obstacle', label: 'Obstacle (Car/Enemy)', promptPlaceholder: 'e.g., a retro arcade car, a giant rolling beetle', defaultAssetPath: '/games/crossy-road/images/enemy-bug.png' },
+      { type: 'character', label: 'Main Character (Player)', promptPlaceholder: 'e.g., princess girl', defaultAssetPath: '/games/crossy-road/images/char-boy.png' },
+      { type: 'obstacle', label: 'Obstacle (Car/Enemy)', promptPlaceholder: 'e.g., a spider', defaultAssetPath: '/games/crossy-road/images/enemy-bug.png' },
     ],
     difficultyPresets: {
       'simple': { obstacleSpeed: 1, trafficDensity: 0.8, playerMoveDelay: 150, gameDuration: 240 },

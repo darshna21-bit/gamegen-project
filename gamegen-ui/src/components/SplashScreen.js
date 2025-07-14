@@ -7,7 +7,7 @@ const SplashScreen = () => {
         className="text-7xl font-bold font-alagard text-white animate-fade-in-scale" // Using font-alagard
         style={{ textShadow: '4px 4px 8px rgba(0,0,0,0.5)' }}
       >
-        Welcome to GameGen
+        Welcome to GenPlay Studio!
       </h1>
       {/* This style block defines the animation. For production, move to index.css or a dedicated CSS file. */}
       <style>{`
