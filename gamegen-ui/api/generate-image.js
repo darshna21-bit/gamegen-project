@@ -62,11 +62,21 @@ const PREGEN_ASSET_MAP = {
             //     frameHeight: 26 // *CONFIRM THIS VALUE*
             // },
             'man character': { // Use 'man character' or 'human character' for prompt
+                imageUrl: '/ai_assets/open_flappy_bird/man/man000',
                 isAnimated: true,
-                prefix: '/ai_assets/open_flappy_bird/man/man', // Matches man000.png to man003.png
+                prefix: '/ai_assets/open_flappy_bird/man/man00', // Matches man000.png to man003.png
                 count: 4, // 0 to 3
-                frameWidth: 32, // *CONFIRM THIS VALUE*
-                frameHeight: 32 // *CONFIRM THIS VALUE*
+                frameWidth: 43, // *CONFIRM THIS VALUE*
+                frameHeight: 30 // *CONFIRM THIS VALUE*
+            },
+            'box bird':{
+                imageUrl: '/ai_assets/open_flappy_bird/box bird/skeleton-animation_00.png', // First frame for preview
+                isAnimated: true,
+                prefix: '/ai_assets/open_flappy_bird/box bird/skeleton-animation_',
+                count: 10, // Based on frame-1.png, frame-2.png
+                frameWidth: 43, // *CONFIRM THIS VALUE* (from your bird.js, 43x30)
+                frameHeight: 30 // *CONFIRM THIS VALUE*
+
             },
             'red bird': {
                 imageUrl: '/ai_assets/open_flappy_bird/red bird/flying/frame-1.png', // First frame for preview
@@ -75,22 +85,6 @@ const PREGEN_ASSET_MAP = {
                 count: 2, // Based on frame-1.png, frame-2.png
                 frameWidth: 43, // *CONFIRM THIS VALUE* (from your bird.js, 43x30)
                 frameHeight: 30 // *CONFIRM THIS VALUE*
-            },
-            'blue bird': {
-                imageUrl: '/ai_assets/open_flappy_bird/blue bird/flying/frame-1.png', // Hypothetical path
-                isAnimated: true,
-                prefix: '/ai_assets/open_flappy_bird/blue bird/flying/frame-',
-                count: 2,
-                frameWidth: 43,
-                frameHeight: 30
-            },
-            'green bird': {
-                imageUrl: '/ai_assets/open_flappy_bird/green bird/flying/frame-1.png', // Hypothetical path
-                isAnimated: true,
-                prefix: '/ai_assets/open_flappy_bird/green bird/flying/frame-',
-                count: 2,
-                frameWidth: 43,
-                frameHeight: 30
             },
         },
         'obstacle': { // For pipes
@@ -138,7 +132,7 @@ const PREGEN_ASSET_MAP = {
             // AI-generated mole characters (based on your uploaded images)
             'alien mole': '/ai_assets/open_whack_a_mole/alien.png',
             'cute hamster mole': '/ai_assets/open_whack_a_mole/cute_hamster.png',
-            'ugly cat mole': '/ai_assets/open_whack_a_mole/ugly_ratang.png', // Assuming 'ugly_ratang.png' is an ugly cat-like mole
+            'ugly rat mole': '/ai_assets/open_whack_a_mole/ugly_rat.png', // Assuming 'ugly_ratang.png' is an ugly cat-like mole
             'skull mole': '/ai_assets/open_whack_a_mole/skull.png',
             'cute mole': '/ai_assets/open_whack_a_mole/cute_mole_spec.png', // For 'cute_mole_spec.png'
             'girl monster mole': '/ai_assets/open_whack_a_mole/girl_monster.png', // For 'girl_monster.png'
@@ -174,7 +168,7 @@ const PREGEN_ASSET_MAP = {
         },
         'gemSet': {
             '_default': null, // No default AI gemSet, game uses its internal default
-            'pink yellow and blue candies': {
+            'cute candies with different shapes': {
                 isAnimated: false,
                 urls: [
                     '/ai_assets/open_simple_match_3/pink_heart.png',

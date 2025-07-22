@@ -1,4 +1,3 @@
-// Elements
 const start_sfx = new Audio('./css/start.mp3');
 const hit_sfx = new Audio('./css/hit.mp3');
 const hit2_sfx = new Audio('./css/hit2.mp3');
@@ -22,16 +21,11 @@ const volumeLevelDOM = document.querySelector('.volume-level');
 
 
 // --- NEW: Global variable to store current generated mole image URL ---
-let currentMoleImageUrl = '/games/Whack-A-Mole/css/mole.png'; // <--- Change this line!// Default mole image path
-// --- NEW/MODIFIED: Global variables for asset URLs (NO HAMMER) ---
-// Initialize with paths relative to script.js's location (js/script.js)
-// Assuming default mole.png is in css/mole.png (so ../css/mole.png from js/)
-// let currentMoleImageUrl = '../css/mole.png';
-// Assuming background.jpg is in css/background.jpg, applied to body or container
-// If it's applied to body, we'll target body. If you want to change the 'container'
-// as the 'ground', we'll update that element. Given your CSS, 'body' has background.
-let currentGroundImageUrl = '/games/Whack-A-Mole/css/background.jpg'; // This is based on your CSS 'body { background: url('./background.jpg'); }'
-          
+// Default mole image path: Set to the correct relative path based on your file structure
+let currentMoleImageUrl = './css/mole.png';
+// Default ground image path: Set to the correct relative path based on your file structure
+let currentGroundImageUrl = './css/background.jpg'; // Assuming your background image is named background.jpg
+
 let velocity_level = 1; // Controls mole spawn time via getRandomTime()
 let time_level = 1;     // Controls game duration via getTime()
 let volume_level = 1;
@@ -46,28 +40,16 @@ let started = false;
 let countdown;
 let gameRestartTimer; // Timer for handling game restarts after game over.
 
-// --- REMOVED: Scoreboard/name input related variables (as per your request) ---
-// const scoreboard = document.querySelector('.scoreboard');
-// const nameContainer = document.querySelector('.enterName');
-// const nameInput = document.querySelector('input[type=text]');
-// const table = document.querySelector('.scores');
-// let scoreboardTable; // etc.
-
 // --- NEW: DOM element selectors for our simplified game over screen ---
 const simpleGameOverDOM = document.getElementById('simple-game-over');
 const simpleRetryButton = document.getElementById('simple-retry-button');
 const gameContainer = document.querySelector('.container'); // Main game view
 
 
-// --- REMOVED: Original modal click listener (modal is now display: none in HTML) ---
-// modal.addEventListener('click', e => { ... });
-
 // --- MODIFIED Event Listeners ---
 start.addEventListener('click', initGame); // Changed to initGame
-// Removed retry.addEventListener('click', goMenu) as we have simpleRetryButton
 holes.forEach(hole => hole.addEventListener('mousedown', up));
 holes.forEach(hole => hole.addEventListener('touchstart', up));
-// Removed nameInput.addEventListener('keyup', enterName);
 velocityLevelDOM.addEventListener('click', changeVelocityLevel); // Still useful for internal game settings
 timeLevelDOM.addEventListener('click', changeTimeLevel);     // Still useful for internal game settings
 volumeLevelDOM.addEventListener('click', changeVolumeLevel);
@@ -92,10 +74,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Ensure score and timer are initially zeroed out and visible
     counter.textContent = '0';
     timer.textContent = `${getTime()}`; // Show default time based on current time_level
-   
-    // Apply default mole and ground images using the ABSOLUTE paths
-    applyMoleAsset(currentMoleImageUrl);
-    applyGroundAsset(currentGroundImageUrl); // Apply default ground image
+    
+    // Directly apply default mole and ground images on DOMContentLoaded
+    // Use the same paths as the currentMoleImageUrl and currentGroundImageUrl global variables
+    moles.forEach(mole => {
+        mole.style.backgroundImage = `url(${currentMoleImageUrl})`;
+        mole.style.backgroundSize = 'contain';
+        mole.style.backgroundRepeat = 'no-repeat';
+        mole.style.backgroundPosition = 'center';
+    });
+    document.body.style.backgroundImage = `url(${currentGroundImageUrl})`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundRepeat = 'no-repeat';
+    document.body.style.backgroundPosition = 'center';
+
+    console.log(`[Whack-A-Mole]: Initial mole character image set to: ${currentMoleImageUrl}`);
+    console.log(`[Whack-A-Mole]: Initial ground image set to: ${currentGroundImageUrl}`);
     
     // Ensure holes are not 'up'
     holes.forEach(hole => hole.classList.remove('up'));
@@ -195,11 +189,11 @@ function startGameplayLoop() {
             started = false; // Game is over
             if(volume_level) {
                 ding_sfx.currentTime = 0
-                ding_sfx.play()
+                ding_sfx.play();
             }
             // Trigger game over screen
             setTimeout(() => {
-                scoreboardUpdater(); // This now calls our custom game over screen
+                scoreboardUpdater();
             }, 1000);
         }
     }, 1000);
@@ -253,12 +247,6 @@ function scoreboardUpdater() {
     bestScoreDOM.textContent = bestScore; // Update display immediately
   }
 }
-
-// --- REMOVED: enterName() function ---
-// function enterName(e) { ... }
-
-// --- REMOVED: goMenu() function ---
-// function goMenu() { ... }
 
 function getRandomTime() {
     switch (velocity_level) {
@@ -372,31 +360,88 @@ function changeVolumeLevel() {
 }
 // --- NEW HELPER FUNCTIONS FOR ASSET APPLICATION ---
 function applyMoleAsset(url) {
-    currentMoleImageUrl = url; // Update global state
-    moles.forEach(mole => {
-        mole.style.backgroundImage = `url(${currentMoleImageUrl})`;
-        mole.style.backgroundSize = 'contain';
-        mole.style.backgroundRepeat = 'no-repeat';
-        mole.style.backgroundPosition = 'center';
-    });
-    console.log(`[Whack-A-Mole]: Updated mole character image to ${currentMoleImageUrl}`);
+    // Get the current background image URL from the first mole element
+    const currentAppliedUrl = moles.length > 0 ? moles[0].style.backgroundImage : '';
+
+    // Only update if a valid URL is provided AND it's different from the currently applied one.
+    if (url && typeof url === 'string' && url.trim() !== '') {
+        // Normalize URLs for comparison (remove 'url("")' and quotes)
+        const normalizedNewUrl = url.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+        const normalizedCurrentUrl = currentAppliedUrl.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+
+        if (normalizedNewUrl !== normalizedCurrentUrl) {
+            currentMoleImageUrl = url;
+            moles.forEach(mole => {
+                mole.style.backgroundImage = `url(${currentMoleImageUrl})`;
+                mole.style.backgroundSize = 'contain';
+                mole.style.backgroundRepeat = 'no-repeat';
+                mole.style.backgroundPosition = 'center';
+            });
+            console.log(`[Whack-A-Mole]: Applied mole character image: ${currentMoleImageUrl}`);
+        } else {
+            console.log(`[Whack-A-Mole]: Mole image already set to ${url}. Skipping re-application.`);
+        }
+    } else {
+        // Revert to default mole image if an invalid URL is passed
+        const defaultUrl = './css/mole.png'; // Corrected default path to be relative to script.js
+        const normalizedDefaultUrl = defaultUrl.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+        const normalizedCurrentUrl = currentAppliedUrl.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+
+        if (normalizedDefaultUrl !== normalizedCurrentUrl) {
+            currentMoleImageUrl = defaultUrl;
+            moles.forEach(mole => {
+                mole.style.backgroundImage = `url(${currentMoleImageUrl})`;
+                mole.style.backgroundSize = 'contain';
+                mole.style.backgroundRepeat = 'no-repeat';
+                mole.style.backgroundPosition = 'center';
+            });
+            console.warn("[Whack-A-Mole]: Invalid mole image URL received. Reverting to default.");
+        } else {
+            console.log(`[Whack-A-Mole]: Invalid mole URL received, but default (${defaultUrl}) is already applied. Skipping re-application.`);
+        }
+    }
 }
 
 function applyGroundAsset(url) {
-    currentGroundImageUrl = url; // Update global state
-    document.body.style.backgroundImage = `url(${currentGroundImageUrl})`;
-    document.body.style.backgroundSize = 'cover';
-    document.body.style.backgroundRepeat = 'no-repeat';
-    document.body.style.backgroundPosition = 'center';
+    // Get the current background image URL from the body style
+    const currentAppliedUrl = document.body.style.backgroundImage;
 
-    console.log(`[Whack-A-Mole]: Updated ground image to ${currentGroundImageUrl}`);
+    // Only update if a valid URL is provided AND it's different from the currently applied one.
+    if (url && typeof url === 'string' && url.trim() !== '') {
+        // Normalize URLs for comparison (remove 'url("")' and quotes)
+        const normalizedNewUrl = url.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+        const normalizedCurrentUrl = currentAppliedUrl.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+
+        if (normalizedNewUrl !== normalizedCurrentUrl) {
+            currentGroundImageUrl = url;
+            document.body.style.backgroundImage = `url(${currentGroundImageUrl})`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundPosition = 'center';
+            console.log(`[Whack-A-Mole]: Applied ground image: ${currentGroundImageUrl}`);
+        } else {
+            console.log(`[Whack-A-Mole]: Ground image already set to ${url}. Skipping re-application.`);
+        }
+    } else {
+        // Revert to default ground image if an invalid URL is passed
+        const defaultUrl = './css/background.jpg'; // Corrected default path to be relative to script.js
+        const normalizedDefaultUrl = defaultUrl.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+        const normalizedCurrentUrl = currentAppliedUrl.replace(/url\(["']?([^"']*)["']?\)/, '$1');
+
+        if (normalizedDefaultUrl !== normalizedCurrentUrl) {
+            currentGroundImageUrl = defaultUrl;
+            document.body.style.backgroundImage = `url(${currentGroundImageUrl})`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundPosition = 'center';
+            console.warn("[Whack-A-Mole]: Invalid ground image URL received. Reverting to default.");
+        } else {
+            console.log(`[Whack-A-Mole]: Invalid ground URL received, but default (${defaultUrl}) is already applied. Skipping re-application.`);
+        }
+    }
 }
 // --- MODIFIED window.addEventListener('message', ...) BLOCK ---
-// This listens for messages from your React app and updates game parameters/assets
-// --- MODIFIED window.addEventListener('message', ...) BLOCK ---
-// This listens for messages from your React app and updates game parameters/assets
-// --- MODIFIED window.addEventListener('message', ...) BLOCK ---
-// This listens for messages from your React app and updates game parameters/assets
+// This listens for messages from your React app and updates game parameter
 window.addEventListener('message', function(event) {
     // IMPORTANT: For security in production, verify event.origin
     // if (event.origin !== 'http://localhost:3000' && event.origin !== 'https://your-gamegen-app.vercel.app') {
@@ -407,6 +452,7 @@ window.addEventListener('message', function(event) {
 
     console.log(`[Whack-A-Mole Game]: Received message - Type: ${type}, Key: ${key}, Value: ${value}, AssetType: ${assetType}, URL: ${url}`);
 
+    // ONLY call asset application functions if the message type is 'UPDATE_ASSET'
     if (type === 'UPDATE_PARAM') {
         if (key === 'moleSpawnRate') {
             if (value >= 2000) {
@@ -456,18 +502,32 @@ window.addEventListener('message', function(event) {
         }
     } else if (type === 'UPDATE_ASSET') {
         let finalUrlToUse = url;
+        // The React UI is sending 'data' with nested 'urls' or 'imageUrl'
         if (data && data.urls && data.urls.length > 0) {
             finalUrlToUse = data.urls[0];
         } else if (data && data.imageUrl) {
             finalUrlToUse = data.imageUrl;
         }
 
+        // IMPORTANT: Override finalUrlToUse with the correct relative path if it's a default asset.
+        // This forces the game to use its known correct path, regardless of what the UI sends for defaults.
         if (assetType === 'moleCharacter') {
-            // No console.warn for path correction here, as you confirmed absolute paths are expected.
+            // If the incoming URL from React UI is for the default mole, use the game's internal default path
+            if (finalUrlToUse && finalUrlToUse.includes('/assets/mole.png')) { // Check if it's the React UI's default absolute path
+                finalUrlToUse = './css/mole.png'; // Force to game's correct relative path
+            }
             applyMoleAsset(finalUrlToUse);
         } else if (assetType === 'ground') {
-            // No console.warn for path correction here, as you confirmed absolute paths are expected.
+            // If the incoming URL from React UI is for the default ground, use the game's internal default path
+            if (finalUrlToUse && finalUrlToUse.includes('/assets/ground.png')) { // Check if it's the React UI's default absolute path
+                finalUrlToUse = './css/background.jpg'; // Force to game's correct relative path
+            }
             applyGroundAsset(finalUrlToUse);
         }
+        // Handle hammer asset type here if needed, otherwise it will be ignored
+        // else if (assetType === 'hammer') {
+        //     // Logic to apply hammer image if you have a DOM element for it
+        //     // console.log(`[Whack-A-Mole]: Hammer asset received: ${finalUrlToUse}`);
+        // }
     }
 }, false);

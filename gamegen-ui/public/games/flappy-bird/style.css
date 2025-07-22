@@ -269,7 +269,7 @@
     background-size: cover;
     position: absolute;
     z-index: 3;
-    /* border: 2px solid red !important;  */
+    /* outline: 2px solid red !important;  */
     /* Add this temporarily */
     /* Optional: For consistent centering regardless of image size */
     /* If you uncomment this, you might need to adjust BIRD_START_X and BIRD_START_Y in app.js
@@ -296,6 +296,7 @@
     width: 60px;
     height: 300px;
     z-index: 1;
+    /* outline: 2px solid blue !important;  */
 }
 
 .topPipe {
@@ -305,6 +306,7 @@
     height: 300px;
     transform: rotate(180deg) scaleX(-1);
     z-index: 1;
+    /* outline: 2px solid blue !important;  */
 }
 
 .topPipe::after {
