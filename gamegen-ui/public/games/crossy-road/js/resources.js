@@ -61,11 +61,20 @@
                 }
             };
 
+            img.onerror = function() { // Added error handling for image loading
+                console.error(`[Resources.js]: Failed to load image: ${url}`);
+                // Optionally set a fallback image or handle the error gracefully
+                resourceCache[url] = null; // Mark as failed to load
+                if(isReady()) {
+                    readyCallbacks.forEach(function(func) { func(); });
+                }
+            };
+
             /* Set the initial cache value to false, this will change when
              * the image's onload event handler is called. Finally, point
              * the images src attribute to the passed in URL.
              */
-            resourceCache[url] = false;
+            resourceCache[url] = false; // Mark as loading
             img.src = url;
         }
     }
@@ -79,7 +88,7 @@
         // If the resource is not in the cache (meaning it wasn't pre-loaded
         // or is still loading), try to initiate its loading.
         // resourceCache[url] will be `false` while loading or `undefined` if never requested.
-        if (!resourceCache[url]) {
+        if (resourceCache[url] === undefined) { // Check if it's never been requested
             _load(url); // Attempt to load it now
         }
         // --- END OF CHANGES ---

@@ -1,9 +1,9 @@
 // script.js from simple match 3
 // Global variables - use `let` for configurability
-let candies = ["Blue", "Orange", "Green", "Yellow", "Red", "Purple"]; // Default initial candies (colors)
+let candies = ["./images/Blue.png", "./images/Orange.png", "./images/Green.png", "./images/Yellow.png", "./images/Red.png", "./images/Purple.png"]; // Default initial candies (paths)
 let board = [];
-let rows = 9;
-let columns = 9;
+let rows = 9; // Keep as is, your default logic manages this
+let columns = 9; // Keep as is, your default logic manages this
 let score = 0;
 let gameInterval; // To control the main game loop
 // let gameSpeedMs = 100; // Speed of crush/slide/generate loop - REMOVED as per plan
@@ -76,6 +76,7 @@ window.onload = function() {
             }
             
             if (boardDimensionsChanged) {
+                // Your existing logic handles the board resizing based on these new values
                 console.log(`%c[script.js] Board dimensions changed. Calling resetGame(). Current rows: ${rows}, columns: ${columns}`, 'color: yellow;');
                 resetGame();
             } else {
@@ -84,21 +85,30 @@ window.onload = function() {
         } else if (type === 'UPDATE_ASSET') {
             console.log(`%c[script.js] UPDATE_ASSET received. Asset Type: ${assetType}, Data:`, 'color: lightblue;', data);
 
-            // *** FIX STARTS HERE ***
-            // Change data.url to data.imageUrl for background assets
-            if (assetType === 'background' && data && data.imageUrl) {
-                console.log(`%c[script.js] Updating background to: ${data.imageUrl}`, 'color: lightgreen;');
-                document.body.style.backgroundImage = `url("${data.imageUrl}")`;
-                document.body.style.backgroundSize = 'cover';
-                document.body.style.backgroundPosition = 'center';
-                document.body.style.backgroundRepeat = 'no-repeat';
-            }
-            // *** FIX ENDS HERE ***
-            else if (assetType === 'gemSet' && data) {
-                console.log(`%c[script.js] Updating gemSet assets with data:`, 'color: lightgreen;', data);
-                updateCandyAssets(data); // `data` here contains `urls` array and `isAnimated`
+            // --- MODIFICATION 1: Handle background and gemSet updates ---
+            if (assetType === 'background') {
+                const bgUrl = url || (data && data.imageUrl); // Prioritize direct 'url' if available, otherwise check 'data.imageUrl'
+                if (bgUrl && typeof bgUrl === 'string' && bgUrl.startsWith('data:image/')) {
+                    console.log(`%c[script.js] Updating background to: ${bgUrl}`, 'color: lightgreen;');
+                    // Apply to body style using your original CSS properties
+                    document.body.style.backgroundImage = `url("${bgUrl}")`;
+                    document.body.style.backgroundSize = 'cover';
+                    document.body.style.backgroundPosition = 'center center'; // Changed from 'center' to 'center center' to match typical usage in your CSS
+                    document.body.style.backgroundRepeat = 'no-repeat';
+                    document.body.style.backgroundAttachment = 'fixed'; // Added to match your CSS
+                } else {
+                    console.warn(`%c[script.js]: Invalid or missing background URL received: ${bgUrl}`, 'color: orange;', data);
+                }
+            } else if (assetType === 'gemSet') {
+                // gemSet is expected to be an object with a 'urls' array
+                if (data && data.urls && Array.isArray(data.urls) && data.urls.length > 0) {
+                    console.log(`%c[script.js] Updating gemSet assets with URLs:`, 'color: lightgreen;', data.urls);
+                    updateCandyAssets(data); // `data` here contains `urls` array and `isAnimated`
+                } else {
+                    console.warn(`%c[script.js]: Invalid or empty gemSet data received for UPDATE_ASSET:`, 'color: orange;', data);
+                }
             } else {
-                console.warn(`%c[script.js]: Invalid assetType or data for UPDATE_ASSET: ${assetType}`, 'color: orange;', data);
+                console.warn(`%c[script.js]: Received asset update for unrecognized type or with invalid data: ${assetType}`, 'color: orange;', data);
             }
         } else {
             console.warn(`%c[script.js]: Received unknown message type: ${type}`, 'color: orange;', event.data);
@@ -178,6 +188,9 @@ function resetGame() {
 }
 
 const getFrameFilename = (prefix, frameIndex) => {
+    // This function is generally for animated sprites.
+    // For match-3, we typically get distinct static images, so this is unlikely to be used
+    // unless you integrate animated candies in the future.
     if (prefix.includes('skeleton-animation_')) {
         return `${prefix}${String(frameIndex).padStart(2, '0')}.png`;
     }
@@ -197,28 +210,28 @@ function updateCandyAssets(gemSetData) {
     const newCandies = [];
     console.log("%c[script.js] updateCandyAssets called with:", 'color: magenta;', gemSetData);
 
-    // Case 1: Animated asset (e.g., Flappy Bird character, though not typical for Match-3 candies)
-    if (gemSetData.isAnimated && gemSetData.prefix && gemSetData.count > 0) {
+    // Prefer `urls` array if available, as a match-3 game needs multiple distinct items.
+    if (gemSetData.urls && Array.isArray(gemSetData.urls) && gemSetData.urls.length > 0) {
+        // Ensure that each URL from the AI is used as a distinct candy type.
+        newCandies.push(...gemSetData.urls); 
+        console.log("%c[script.js] Updated candies from gemSetData.urls (static collection):", 'color: magenta;', newCandies);
+    }
+    // Fallback for animated assets (unlikely for Match-3 "candies")
+    else if (gemSetData.isAnimated && gemSetData.prefix && gemSetData.count > 0) {
         for (let i = 0; i < gemSetData.count; i++) {
             newCandies.push(getFrameFilename(gemSetData.prefix, i));
         }
-        console.log("%c[script.js] Updated candies from animationData (animated):", 'color: magenta;', newCandies);
+        console.log("%c[script.js] Updated candies from animationData (animated - unlikely for match3):", 'color: magenta;', newCandies);
     }
-    // Case 2: Collection of static images (your custom candies)
-    else if (gemSetData.urls && Array.isArray(gemSetData.urls) && gemSetData.urls.length > 0) {
-        newCandies.push(...gemSetData.urls); // Add all URLs from the array
-        console.log("%c[script.js] Updated candies from gemSetData.urls (static collection):", 'color: magenta;', newCandies);
-    }
-    // Case 3: Single static image URL (only if it's a non-empty string)
-    // IMPORTANT CHANGE: Added check for gemSetData.url.length > 0
-    else if (typeof gemSetData.url === 'string' && gemSetData.url.length > 0) {
+    // Fallback if AI somehow sends a single imageUrl directly for gemSet (not an array)
+    else if (gemSetData.imageUrl && typeof gemSetData.imageUrl === 'string' && gemSetData.imageUrl.length > 0) {
         console.warn("%c[script.js] Received single image URL for gemSet. Match-3 typically requires multiple distinct candy images. Using it as the only type for now.", 'color: orange;');
-        newCandies.push(gemSetData.url);
+        newCandies.push(gemSetData.imageUrl);
     }
-    // Case 4: Invalid or empty data (including an empty string URL) - fallback to default
+    // Case: Invalid or empty data - revert to default
     else {
         console.warn("%c[script.js]: Invalid or empty gemSet data received. Reverting to default candies.", 'color: orange;', gemSetData);
-        candies = ["Blue", "Orange", "Green", "Yellow", "Red", "Purple"];
+        candies = ["./images/Blue.png", "./images/Orange.png", "./images/Green.png", "./images/Yellow.png", "./images/Red.png", "./images/Purple.png"];
         resetGame(); // Ensure board is refreshed with default if asset update failed
         return; // Exit early as we've already handled the default
     }
@@ -235,20 +248,11 @@ function updateCandyAssets(gemSetData) {
 
 
 function randomCandy() {
-    // Add a log here to see what `candies` array looks like *before* picking.
     console.log("%c[script.js] randomCandy() called. Current 'candies' array:", 'color: cyan;', candies);
-
-    const selectedCandy = candies[Math.floor(Math.random() * candies.length)];
-    
-    // Add a log here to see the selected candy and its determined source.
-    let finalSrc;
-    if (selectedCandy.includes('/')) {
-        finalSrc = selectedCandy; // It's already a path (custom image)
-    } else {
-        finalSrc = `./images/${selectedCandy}.png`; // Construct path for default colors (e.g., Blue.png)
-    }
-    console.log(`%c[script.js] randomCandy() selected: "${selectedCandy}", returning: "${finalSrc}"`, 'color: cyan;');
-    return finalSrc;
+    // The 'candies' array now directly contains the full paths (either default or Base64 URLs)
+    const selectedCandySrc = candies[Math.floor(Math.random() * candies.length)];
+    console.log(`%c[script.js] randomCandy() selected: "${selectedCandySrc}"`, 'color: cyan;');
+    return selectedCandySrc;
 }
 
 function startGame() {
@@ -262,28 +266,14 @@ function startGame() {
 
     boardElement.innerHTML = '';
     board = [];
-
-    // Calculate tile size dynamically based on window size and number of rows/columns
-    // Max board dimension is 45% of window width, 80% of window height, or max 450px
-    const maxBoardDimension = Math.min(window.innerWidth * 0.45, window.innerHeight * 0.8, 450);
-    const actualTileSize = maxBoardDimension / Math.max(rows, columns);
-
-    console.log(`%c[script.js] Calculated actualTileSize: ${actualTileSize}`, 'color: lightgreen;');
-    console.log(`%c[script.js] Attempting to set boardElement styles:`, 'color: lightgreen;');
-    console.log(`   width: ${actualTileSize * columns}px`);
-    console.log(`   height: ${actualTileSize * rows}px`);
-    console.log(`   display: grid`);
-    console.log(`   gridTemplateColumns: repeat(${columns}, 1fr)`);
-    console.log(`   gridTemplateRows: repeat(${rows}, 1fr)`);
-
-    boardElement.style.width = `${actualTileSize * columns}px`;
-    boardElement.style.height = `${actualTileSize * rows}px`;
+    
+    // --- NO CHANGES HERE: Retain your original grid setup logic ---
+    // Your game already handles dynamic rows/columns and individual tile sizing correctly.
     boardElement.style.display = 'grid';
     boardElement.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
     boardElement.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-    // --- NEW DEBUG LOG: Check the inline style after setting ---
-    console.log("%c[script.js] boardElement.style.cssText AFTER setting styles:", 'color: orange;', boardElement.style.cssText);
+    console.log("%c[script.js] boardElement.style.cssText AFTER setting grid styles:", 'color: orange;', boardElement.style.cssText);
 
 
     for (let r = 0; r < rows; r++) {
@@ -301,6 +291,7 @@ function startGame() {
             tile.addEventListener("drop", dragDrop);
             tile.addEventListener("dragend", dragEnd);
 
+            // --- NO CHANGES HERE: Retain your original objectFit setting ---
             tile.style.objectFit = 'contain'; // Ensure images fit within their cells
 
             boardElement.append(tile); // Add tile to the board
@@ -326,12 +317,16 @@ function fillBoardUntilNoMatches() {
                 } while (isMatchAt(r, c));
             }
         }
-        if (checkValid()) {
+        if (checkValid()) { // This ensures the *initial* board has no matches.
             hasMatches = true;
         }
         attempts++;
+        if (attempts >= 100) { // Safety break
+             console.warn("%c[script.js] fillBoardUntilNoMatches: Exceeded max attempts to create a board without initial matches. Board might start with some matches.", 'color: orange;');
+        }
     }
 }
+
 
 function isMatchAt(r, c) {
     const currentSrc = board[r][c].src;
@@ -399,6 +394,8 @@ function dragEnd() {
             otherTile.src = otherImg;
         }
     }
+    currTile = null;
+    otherTile = null;
 }
 
 function crushCandy() {

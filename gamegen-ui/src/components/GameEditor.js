@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const userSessionId = uuidv4();
 
-// --- Centralized Game Configuration ---
+// --- Centralized Game Configuration (Keep as is) ---
 const gameConfigs = {
   'flappy-bird': {
     title: 'Flappy Bird',
@@ -28,25 +28,23 @@ const gameConfigs = {
     isLandscape: false,
   },
   'Whack-A-Mole': {
-    title: 'Whack-A-Mole',
-    templatePath: '/games/Whack-A-Mole/index.html',
-    parameters: [
-      { name: 'Mole Spawn Rate (ms)', key: 'moleSpawnRate', min: 500, max: 3000, step: 100, defaultValue: 1500 },
-      { name: 'Game Duration (s)', key: 'gameDuration', min: 30, max: 120, step: 10, defaultValue: 60 },
-    ],
-    aiAssets: [
-      // These entries are already present in your provided code.
-      // We just need to ensure the prompt placeholders are good for the AI server.
-      { type: 'moleCharacter', label: 'Mole Character', promptPlaceholder: 'e.g., an alien mole, a skull', defaultAssetPath: '/games/Whack-A-Mole/css/mole.png' },
-      { type: 'ground', label: 'Ground Texture', promptPlaceholder: 'e.g., muddy farm ground, grey stone, snowy landscape', defaultAssetPath: '/games/Whack-A-Mole/css/background.png' },
-    ],
-    difficultyPresets: {
-      'simple': { moleSpawnRate: 2500, gameDuration: 90 },
-      'medium': { moleSpawnRate: 1500, gameDuration: 60 },
-      'hard': { moleSpawnRate: 700, gameDuration: 30 },
-    },
-    isLandscape: false,
-  },
+    title: 'Whack-A-Mole',
+    templatePath: '/games/Whack-A-Mole/index.html',
+    parameters: [
+      { name: 'Mole Spawn Rate (ms)', key: 'moleSpawnRate', min: 500, max: 3000, step: 100, defaultValue: 1500 },
+      { name: 'Game Duration (s)', key: 'gameDuration', min: 30, max: 120, step: 10, defaultValue: 60 },
+    ],
+    aiAssets: [
+      { type: 'moleCharacter', label: 'Mole Character', promptPlaceholder: 'e.g., an alien mole, a skull', defaultAssetPath: '/games/Whack-A-Mole/css/mole.png' },
+      { type: 'ground', label: 'Ground Texture', promptPlaceholder: 'e.g., muddy farm ground, grey stone, snowy landscape', defaultAssetPath: '/games/Whack-A-Mole/css/background.png' },
+    ],
+    difficultyPresets: {
+      'simple': { moleSpawnRate: 2500, gameDuration: 90 },
+      'medium': { moleSpawnRate: 1500, gameDuration: 60 },
+      'hard': { moleSpawnRate: 700, gameDuration: 30 },
+    },
+    isLandscape: false,
+  },
   'speed-runner': {
     title: 'Speed Runner',
     templatePath: '/games/speed-runner/index.html',
@@ -107,18 +105,18 @@ const gameConfigs = {
   },
 };
 
-// --- Helper function to format frame numbers for different naming conventions ---
+// --- Helper function to format frame numbers for different naming conventions (UNCHANGED) ---
 const getFrameFilename = (prefix, frameIndex) => {
-    if (prefix.includes('skeleton-animation_')) {
-        return `${prefix}${String(frameIndex).padStart(2, '0')}.png`;
-    }
-    if (prefix.includes('man')) {
-        return `${prefix}${String(frameIndex).padStart(3, '0')}.png`;
-    }
-    if (prefix.includes('frame-')) {
-        return `${prefix}${frameIndex + 1}.png`;
-    }
-    return `${prefix}${frameIndex}.png`;
+  if (prefix.includes('skeleton-animation_')) {
+    return `${prefix}${String(frameIndex).padStart(2, '0')}.png`;
+  }
+  if (prefix.includes('man')) {
+    return `${prefix}${String(frameIndex).padStart(3, '0')}.png`;
+  }
+  if (prefix.includes('frame-')) {
+    return `${prefix}${frameIndex + 1}.png`;
+  }
+  return `${prefix}${frameIndex}.png`;
 };
 
 
@@ -138,12 +136,16 @@ export default function GameEditor({
   const [aiPromptInput, setAiPromptInput] = useState(() => {
     const initialPromptValues = {};
     if (config && config.aiAssets) {
-        config.aiAssets.forEach(asset => {
-            initialPromptValues[asset.type] = '';
-        });
+      config.aiAssets.forEach(asset => {
+        initialPromptValues[asset.type] = '';
+      });
     }
     return initialPromptValues;
   });
+
+  const [combinedAiPrompt, setCombinedAiPrompt] = useState('');
+  const [isLoadingCombinedAi, setIsLoadingCombinedAi] = useState(false);
+
   const [loadingAsset, setLoadingAsset] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
@@ -152,39 +154,50 @@ export default function GameEditor({
 
   const postMessageToGame = useCallback((data) => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(data, '*'); // Send 'data' directly
-      console.log(`[GameEditor]: Posted message to ${config.title}:`, data);
+      iframeRef.current.contentWindow.postMessage(data, '*');
+      console.log(`%c[GameEditor]: Posted message to ${config.title}:`, 'color: orange;', data);
     }
   }, [config.title]);
 
-  // This useEffect handles initial load and updates from App.js's gameSettings/currentAssets
   useEffect(() => {
     if (iframeRef.current && iframeRef.current.contentWindow && config && gameSettings && currentAssets) {
-      // Send game settings as individual UPDATE_PARAM messages
+      // Send game parameters first
       Object.keys(gameSettings).forEach(key => {
-        postMessageToGame({ type: 'UPDATE_PARAM', key: key, value: gameSettings[key] });
+        postMessageToGame({ type: 'UPDATE_PARAM', key: key, value: parseFloat(gameSettings[key]) });
       });
 
-      // Send asset updates with correct structure
+      // Then send asset updates
       Object.keys(currentAssets).forEach(typeFromCurrentAssets => {
         const assetValue = currentAssets[typeFromCurrentAssets];
-        let payloadForGame = null;
-
-        if (typeof assetValue === 'string') {
-            payloadForGame = assetValue; // It's a URL string
-        } else if (typeof assetValue === 'object' && assetValue !== null) {
-            payloadForGame = assetValue; // It's an object (animationData or {urls: []})
-        }
-
-        if (payloadForGame) {
+        
+        // --- MODIFIED: Handle gemSet as an array of URLs, other assets as single URLs ---
+        if (typeFromCurrentAssets === 'gemSet' && assetValue && Array.isArray(assetValue.urls)) {
+            // If it's gemSet and has a 'urls' array, send it in the 'data' property
             postMessageToGame({
                 type: 'UPDATE_ASSET',
                 assetType: typeFromCurrentAssets,
-                // --- MODIFIED: Send 'data' property if it's an object, otherwise 'url' ---
-                // This ensures animated assets send their full data, and static assets send their URL.
-                data: typeof payloadForGame === 'object' ? payloadForGame : undefined,
-                url: typeof payloadForGame === 'string' ? payloadForGame : undefined
+                data: { urls: assetValue.urls, isAnimated: false } // Pass the urls array
             });
+            console.log(`%c[GameEditor]: Initial gemSet assets sent for ${typeFromCurrentAssets}.`, 'color: blue;', assetValue.urls);
+        } else if (typeof assetValue === 'string') { // For single image assets (char, bg, obstacle, ground, moleCharacter)
+            // If it's a direct Base64 string or a path, send it as 'url' and also in 'data.imageUrl'
+            postMessageToGame({
+                type: 'UPDATE_ASSET',
+                assetType: typeFromCurrentAssets,
+                url: assetValue, // Send the Base64 data URL or path directly
+                data: { imageUrl: assetValue } // Also send in data.imageUrl for game consumption flexibility
+            });
+            console.log(`%c[GameEditor]: Initial single asset sent for ${typeFromCurrentAssets}.`, 'color: blue;', assetValue);
+        } else if (typeof assetValue === 'object' && assetValue !== null && assetValue.isAnimated) {
+            // This case is for animated sprites, if you ever add them.
+            postMessageToGame({
+                type: 'UPDATE_ASSET',
+                assetType: typeFromCurrentAssets,
+                data: assetValue // Send the animation config object
+            });
+            console.log(`%c[GameEditor]: Initial animated asset sent for ${typeFromCurrentAssets}.`, 'color: blue;', assetValue);
+        } else {
+            console.warn(`%c[GameEditor]: Skipping initial asset message for ${typeFromCurrentAssets}. Unexpected type or structure:`, 'color: orange;', assetValue);
         }
       });
     }
@@ -193,8 +206,7 @@ export default function GameEditor({
 
   const handleParameterChange = (key, value) => {
     const newSettings = { ...gameSettings, [key]: value };
-    onGameSettingsChange(newSettings); // Update parent's state
-    // Send individual UPDATE_PARAM message for immediate feedback
+    onGameSettingsChange(newSettings);
     postMessageToGame({ type: 'UPDATE_PARAM', key: key, value: parseFloat(value) });
   };
 
@@ -203,78 +215,156 @@ export default function GameEditor({
     setLoadingAsset(assetType);
 
     try {
-      const aiResponse = await axios.post('/api/generate-image', {
-          gameTemplate: gameId,
-          assetType: assetType,
-          prompt: prompt,
-          userSessionId: userSessionId,
+      const response = await axios.post('http://localhost:5000/api/generate-asset', {
+        prompt: prompt,
+        assetType: assetType,
       });
 
-      const { success, imageUrl, animationData, message, serverFilePath, urls } = aiResponse.data;
+      // --- MODIFIED: Destructure 'urls' in addition to 'image' ---
+      const { success, image, urls, error } = response.data; // Now expect 'urls' for gemSet
 
       if (success) {
-          let publicDataToStore = null;
-          let serverPathToStore = null;
-          let payloadForGame = null; // This will hold the object/string to send to the game iframe
+        if (assetType === 'gemSet' && urls && Array.isArray(urls)) {
+            // For gemSet, 'urls' will be an array of Base64 strings from the backend
+            console.log(`%c[GameEditor Debug]: Received ${urls.length} gem URLs from backend for ${assetType}.`, 'color: green;');
+            // Store the full object { urls: [...] } in currentAssets (parent state)
+            onAssetChange(gameId, assetType, { urls: urls, isAnimated: false }); // publicDataToStore is now an object
 
-          if (animationData) {
-              publicDataToStore = animationData; // Store the full animationData object
-              if (imageUrl) {
-                  publicDataToStore.imageUrl = imageUrl; // Add imageUrl to animationData for preview
-              }
-              serverPathToStore = animationData.prefix || serverFilePath;
-              payloadForGame = publicDataToStore; // Send the full animationData object
-          } else if (urls && Array.isArray(urls)) { 
-              publicDataToStore = { urls: urls, isAnimated: false }; // Store as an object with 'urls' array
-              serverPathToStore = serverFilePath || urls[0]; // Use first URL for server path tracking
-              payloadForGame = publicDataToStore; // Send the object with urls array
-          } else if (imageUrl) {
-              publicDataToStore = imageUrl; // Store the direct URL for static assets
-              serverPathToStore = serverFilePath || imageUrl;
-              payloadForGame = imageUrl; // Send the single URL string
-          } else {
-              throw new Error("AI generation endpoint did not return valid image or animation data.");
-          }
+            // Post message to the game iframe with the 'urls' array inside 'data'
+            postMessageToGame({
+                type: 'UPDATE_ASSET',
+                assetType: assetType,
+                data: { urls: urls, isAnimated: false } // Send the array of URLs as 'data'
+            });
+            alert(`Success: Generated ${assetType} assets!`);
+        } else if (image) {
+            // For single images (character, background, obstacle, ground, moleCharacter)
+            console.log(`%c[GameEditor Debug]: RAW BASE64 RECEIVED from backend for ${assetType}: ${image.substring(0, 100)}... (Length: ${image.length})`, 'color: green;');
+            const generatedAssetDataUrl = `data:image/png;base64,${image}`;
+            console.log(`%c[GameEditor Debug]: FULL DATA URL PREPARED for ${assetType}: ${generatedAssetDataUrl.substring(0, 100)}... (Length: ${generatedAssetDataUrl.length})`, 'color: green;');
+            
+            // Store the single Base64 URL in currentAssets (parent state)
+            onAssetChange(gameId, assetType, generatedAssetDataUrl); // publicDataToStore is direct URL
 
-          onAssetChange(gameId, assetType, publicDataToStore, serverPathToStore);
-          console.log(`Success: ${message}`);
-
-          if (payloadForGame) {
-              postMessageToGame({
-                  type: 'UPDATE_ASSET',
-                  assetType: assetType,
-                  // --- MODIFIED: Send 'data' property if it's an object, otherwise 'url' ---
-                  // This ensures animated assets send their full data, and static assets send their URL.
-                  data: typeof payloadForGame === 'object' ? payloadForGame : undefined,
-                  url: typeof payloadForGame === 'string' ? payloadForGame : undefined
-              });
-          }
+            // Post message to the game iframe with the single URL
+            postMessageToGame({
+              type: 'UPDATE_ASSET',
+              assetType: assetType,
+              url: generatedAssetDataUrl, // Send as 'url' for simple cases
+              data: { imageUrl: generatedAssetDataUrl } // Also send in data.imageUrl for game consumption flexibility
+            });
+            alert(`Success: Generated ${assetType} asset!`);
+        } else {
+            console.error(`%cGeneration failed for ${assetType}: Unexpected response data format.`, 'color: red;', response.data);
+            alert(`Failed to generate ${assetType}: Unexpected data format.`);
+        }
       } else {
-          console.log(`Generation failed: ${message}`);
+        console.error(`%cGeneration failed for ${assetType}:`, 'color: red;', error);
+        alert(`Failed to generate ${assetType}: ${error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to generate asset:', error.response ? error.response.data : error.message);
-      console.log('Failed to generate asset. Please check the console for details.');
+      console.error('%cFailed to generate asset:', 'color: red;', error.response ? error.response.data : error.message);
+      alert(`Failed to generate ${assetType}. Please check the console for details.`);
     } finally {
       setLoadingAsset(null);
     }
   };
 
+  // --- handleGenerateCombinedAi: No functional changes needed here for gemSet handling ---
+  // The logic within this function correctly calls handleGenerateAsset for each asset type,
+  // and handleGenerateAsset now contains the specific logic for gemSet.
+  const handleGenerateCombinedAi = async () => {
+    if (!combinedAiPrompt.trim()) return;
+    setIsLoadingCombinedAi(true);
+
+    try {
+      // Step 1: Call Backend LLM for prompt parsing
+      console.log('%cCalling backend LLM to parse prompt:', 'color: lightblue;', combinedAiPrompt);
+      const llmResponse = await axios.post('http://localhost:5000/api/generate-llm-text', {
+        prompt: combinedAiPrompt,
+        gameId: gameId // Pass gameId for LLM context
+      });
+      const { success: llmSuccess, data: llmParsedData, error: llmError } = llmResponse.data;
+
+      if (!llmSuccess) {
+        throw new Error(`LLM parsing failed: ${llmError || 'Unknown LLM error'}`);
+      }
+      const { character_prompt, background_prompt, difficulty, obstacle_prompt, gemset_prompt, other_settings } = llmParsedData; // Destructure all possible prompts
+
+      console.log('%cLLM Parsed Data:', 'color: lightblue;', { character_prompt, background_prompt, difficulty, obstacle_prompt, gemset_prompt, other_settings });
+
+
+      // Step 2: Apply Difficulty Presets (or directly from LLM's other_settings if available)
+      let newGameSettings = { ...gameSettings }; // Start with current settings
+      if (difficulty && config.difficultyPresets && config.difficultyPresets[difficulty]) {
+        newGameSettings = { ...newGameSettings, ...config.difficultyPresets[difficulty] };
+        setDifficulty(difficulty); // Update UI difficulty button
+      } else if (other_settings && Object.keys(other_settings).length > 0) {
+          // Future: if LLM returns explicit numbers for speed, duration, etc.
+          newGameSettings = { ...newGameSettings, ...other_settings };
+      }
+      onGameSettingsChange(newGameSettings); // Update parent's state
+      Object.keys(newGameSettings).forEach(key => { // Send to iframe
+        postMessageToGame({ type: 'UPDATE_PARAM', key: key, value: parseFloat(newGameSettings[key]) });
+      });
+
+
+      // Step 3: Generate Assets based on parsed prompts (for current game's relevant assets)
+      const assetGenerationPromises = [];
+
+      // Iterate through the game's defined aiAssets to know what to generate
+      config.aiAssets.forEach(assetConfig => {
+        let promptToUse = '';
+        let assetTypeKey = assetConfig.type; // e.g., 'character', 'background', 'moleCharacter', 'ground', 'gemSet'
+
+        // --- IMPORTANT: Map LLM output keys to frontend assetConfig types based on gameId ---
+        if (gameId === 'Whack-A-Mole') {
+          if (assetTypeKey === 'moleCharacter') promptToUse = character_prompt;
+          else if (assetTypeKey === 'ground') promptToUse = background_prompt;
+        } else if (gameId === 'flappy-bird') {
+          if (assetTypeKey === 'character') promptToUse = character_prompt;
+          else if (assetTypeKey === 'background') promptToUse = background_prompt;
+          else if (assetTypeKey === 'obstacle') promptToUse = obstacle_prompt;
+        } else if (gameId === 'speed-runner') {
+          if (assetTypeKey === 'character') promptToUse = character_prompt;
+          else if (assetTypeKey === 'background') promptToUse = background_prompt;
+          else if (assetTypeKey === 'obstacle') promptToUse = obstacle_prompt;
+        } else if (gameId === 'simple-match-3') {
+          if (assetTypeKey === 'background') promptToUse = background_prompt;
+          else if (assetTypeKey === 'gemSet') promptToUse = gemset_prompt; // Correctly mapping to gemset_prompt
+        } else if (gameId === 'crossy-road') {
+          if (assetTypeKey === 'character') promptToUse = character_prompt;
+          else if (assetTypeKey === 'obstacle') promptToUse = obstacle_prompt;
+        }
+
+
+        if (promptToUse && promptToUse.trim()) {
+          assetGenerationPromises.push(handleGenerateAsset(assetTypeKey, promptToUse));
+        }
+      });
+
+      await Promise.all(assetGenerationPromises);
+
+      alert('Game assets and settings updated from combined prompt via AI!');
+
+    } catch (error) {
+      console.error('%cError processing combined AI prompt:', 'color: red;', error.response ? error.response.data : error.message);
+      alert(`Failed to generate combined assets/settings: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsLoadingCombinedAi(false);
+    }
+  };
+
+
   const setDifficultyLevel = (level) => {
-    setDifficulty(level); // Updates the active difficulty button UI
+    setDifficulty(level);
     if (config.difficultyPresets && config.difficultyPresets[level]) {
       const newParams = config.difficultyPresets[level];
-      
-      // 1. Update the parent's (App.js) gameSettings state
-      onGameSettingsChange(newParams); 
-
-      // 2. IMMEDIATELY post individual messages to the game iframe
-      // Iterate and send individual UPDATE_PARAM messages
+      onGameSettingsChange(newParams);
       Object.keys(newParams).forEach(key => {
         postMessageToGame({ type: 'UPDATE_PARAM', key: key, value: newParams[key] });
       });
-
-      console.log(`[GameEditor]: Difficulty set to ${level}. Sent UPDATE_PARAM for each setting:`, newParams);
+      console.log(`%c[GameEditor]: Difficulty set to ${level}. Sent UPDATE_PARAM for each setting:`, 'color: green;', newParams);
     }
   };
 
@@ -289,51 +379,53 @@ export default function GameEditor({
     );
   }
 
-  // Handle Export Game
   const handleExportGame = async () => {
-      setIsExporting(true);
-      console.log("Initiating game export...");
-      console.log("Current Game Parameters:", gameSettings);
-      console.log("Current AI Asset Server Paths for this game:", aiAssetServerPaths);
+    setIsExporting(true);
+    console.log("%cInitiating game export...", 'color: yellow;');
+    console.log("%cCurrent Game Parameters:", 'color: yellow;', gameSettings);
+    console.log("%cCurrent AI Asset Server Paths for this game (from currentAssets state):", 'color: yellow;', currentAssets); // Use currentAssets
 
-      try {
-          const response = await axios.post(`http://localhost:5000/api/export/${gameId}`, {
-              gameParameters: gameSettings,
-              aiAssetPaths: aiAssetServerPaths,
-              userSessionId: userSessionId,
-          }, {
-              responseType: 'blob',
-          });
+    try {
+        const response = await axios.post(`http://localhost:5000/api/export/${gameId}`, {
+            gameParameters: gameSettings,
+            aiAssetPaths: currentAssets, // Correct: Use currentAssets which stores the Base64 URLs/objects
+            userSessionId: userSessionId,
+        }, {
+            responseType: 'blob',
+        });
 
-          const url = window.URL.createObjectURL(new Blob([response.data]));
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', `${gameId}_custom_game.zip`);
-          document.body.appendChild(link);
-          link.click();
-          link.parentNode.removeChild(link);
-          window.URL.revokeObjectURL(url);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${gameId}_custom_game.zip`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
 
-          console.log("Game exported successfully!");
-          console.log("Your custom game has been downloaded!");
-
-      } catch (error) {
-          console.error('Error during game export:', error.response ? error.response.data : error.message);
-          let errorMessage = 'Failed to export game. Please check the console for details.';
-          if (error.response && error.response.data instanceof Blob) {
-              const errorText = await error.response.data.text();
-              console.error('Backend error message:', errorText);
-              errorMessage += ` Server message: ${errorText.substring(0, 100)}...`;
-          } else if (error.response && error.response.data && typeof error.response.data.message === 'string') {
-              errorMessage += ` Server message: ${error.response.data.message}`;
-          } else if (error.response && error.response.status) {
-              errorMessage += ` Server responded with status: ${error.response.status}`;
-          }
-          console.log(errorMessage);
-      } finally {
-          setIsExporting(false);
-      }
-  };
+        console.log("%cGame exported successfully!", 'color: green;');
+        alert("Your custom game has been downloaded!");
+    } catch (error) {
+        console.error('%cError during game export:', 'color: red;', error.response ? error.response.data : error.message);
+        let errorMessage = 'Failed to export game. Please check the console for details.';
+        if (error.response && error.response.data instanceof Blob) {
+            try {
+                const errorText = await error.response.data.text();
+                const errorJson = JSON.parse(errorText);
+                errorMessage += ` Server message: ${errorJson.message || errorText.substring(0, 100)}...`;
+            } catch (parseError) {
+                errorMessage += ` Server message: ${error.response.data.text().substring(0, 100)}...`;
+            }
+        } else if (error.response && error.response.data && typeof error.response.data.message === 'string') {
+            errorMessage += ` Server message: ${error.response.data.message}`;
+        } else if (error.response && error.response.status) {
+            errorMessage += ` Server responded with status: ${error.response.status}`;
+        }
+        alert(errorMessage);
+    } finally {
+        setIsExporting(false);
+    }
+};
 
   return (
     <div className={`flex w-full h-screen bg-gray-900 text-white p-8 ${config.isLandscape ? 'flex-col lg:flex-row' : ''}`}>
@@ -352,9 +444,9 @@ export default function GameEditor({
           allowFullScreen
         ></iframe>
         {/* Loading overlay for AI generation or export */}
-        {(loadingAsset || isExporting) && (
+        {(loadingAsset || isExporting || isLoadingCombinedAi) && (
           <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center text-white text-xl font-semibold z-10">
-            {isExporting ? 'Exporting Game...' : `Generating Image for ${loadingAsset}...`}
+            {isExporting ? 'Exporting...' : (isLoadingCombinedAi ? 'Generating All Assets & Settings...' : `Generating Image for ${loadingAsset}...`)}
           </div>
         )}
       </div>
@@ -372,6 +464,29 @@ export default function GameEditor({
         </button>
 
         <p className="text-xl font-semibold mb-6 text-gray-300">Change as per your choice ({config.title})</p>
+
+        {/* NEW: Combined AI Prompt Input */}
+        <div className="mb-8 p-4 bg-gray-700 rounded-md">
+            <label htmlFor="combined-ai-prompt" className="block text-lg font-medium text-gray-300 mb-3">
+                Generate with AI (Single Prompt):
+            </label>
+            <textarea
+                id="combined-ai-prompt"
+                value={combinedAiPrompt}
+                onChange={(e) => setCombinedAiPrompt(e.target.value)}
+                placeholder="e.g., game medium and a character skull at place of mole and a scary background"
+                rows="3"
+                className="block w-full flex-1 rounded-l-md border-gray-600 focus:ring-purple-500 focus:border-purple-500 text-base px-3 py-2 placeholder-gray-500 bg-gray-800 text-white mb-3"
+            ></textarea>
+            <button
+                onClick={handleGenerateCombinedAi}
+                disabled={isLoadingCombinedAi}
+                className="w-full inline-flex items-center justify-center rounded-md border border-gray-600 bg-purple-600 px-4 py-2 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:bg-purple-400 disabled:cursor-not-allowed transition duration-200 shadow"
+            >
+                {isLoadingCombinedAi ? 'Generating All...' : 'Generate Game with AI'}
+            </button>
+        </div>
+
 
         {/* Difficulty Level Buttons */}
         <div className="mb-8">
@@ -427,7 +542,8 @@ export default function GameEditor({
           ))}
         </div>
 
-        {/* AI Asset Generation Section */}
+        {/* AI Asset Generation Section (Individual Prompts) */}
+        {/* Keep this section if you want users to generate individual assets too */}
         {config.aiAssets.map(asset => (
           <div key={asset.type} className="flex flex-col mb-8 border-t border-gray-700 pt-6">
             <label htmlFor={`prompt-${asset.type}`} className="block text-base font-medium text-gray-300 mb-2">
@@ -439,8 +555,7 @@ export default function GameEditor({
                 id={`prompt-${asset.type}`}
                 value={aiPromptInput[asset.type] || ''}
                 onChange={(e) => setAiPromptInput(prev => ({ ...prev, [asset.type]: e.target.value }))}
-                className="block w-full flex-1 rounded-l-md border-gray-600 focus:ring-purple-500 focus:border-purple-500 text-base px-3 py-2 placeholder-gray-500 bg-gray-700 text-white"
-                placeholder={asset.promptPlaceholder}
+                className="block w-full flex-1 rounded-l-md border-gray-600 focus:ring-purple-500 focus:border-purple-500 text-base px-3 py-2 placeholder-gray-500 bg-gray-800 text-white mb-3"
               />
               <button
                 onClick={() => handleGenerateAsset(asset.type, aiPromptInput[asset.type])}
@@ -451,29 +566,31 @@ export default function GameEditor({
               </button>
             </div>
             {/* Asset Preview Display */}
-            {currentAssets[asset.type] && ( // Check if an asset is actually available to display
+            {currentAssets[asset.type] && (
               <div className="mt-4 text-center">
-                {currentAssets[asset.type].isAnimated ? (
-                  <img
-                    src={getFrameFilename(currentAssets[asset.type].prefix, 0)}
-                    alt={asset.label}
-                    className="mx-auto max-w-[120px] max-h-[120px] object-contain border border-gray-600 rounded-md shadow"
-                    style={{
-                      width: currentAssets[asset.type].frameWidth || 'auto',
-                      height: currentAssets[asset.type].frameHeight || 'auto'
-                    }}
-                  />
+                {/* Check if the asset is an object with 'urls' (e.g., from default config or older AI)
+                    or if it's a direct Base64 string from new AI generation.
+                    Prioritize Base64/single URL string for simplicity. */}
+                {asset.type === 'gemSet' && currentAssets[asset.type].urls && currentAssets[asset.type].urls.length > 0 ? (
+                    <div className="flex flex-wrap justify-center gap-2">
+                        {currentAssets[asset.type].urls.map((url, index) => (
+                            <img
+                                key={index}
+                                src={url}
+                                alt={`${asset.label} ${index + 1}`}
+                                className="max-w-[80px] max-h-[80px] object-contain border border-gray-600 rounded-md shadow"
+                            />
+                        ))}
+                    </div>
                 ) : (
-                  <img
-                    // Prioritize urls[0] for preview if available
-                    src={
-                        (currentAssets[asset.type].urls && currentAssets[asset.type].urls[0]) || 
-                        currentAssets[asset.type].url || 
-                        currentAssets[asset.type]
-                    }
-                    alt={asset.label}
-                    className="mx-auto max-w-[120px] max-h-[120px] object-contain border border-gray-600 rounded-md shadow"
-                  />
+                    <img
+                        src={typeof currentAssets[asset.type] === 'string'
+                            ? currentAssets[asset.type]
+                            : (currentAssets[asset.type].url) || currentAssets[asset.type].defaultAssetPath
+                           }
+                        alt={asset.label}
+                        className="mx-auto max-w-[120px] max-h-[120px] object-contain border border-gray-600 rounded-md shadow"
+                    />
                 )}
               </div>
             )}
@@ -484,7 +601,7 @@ export default function GameEditor({
         <div className="mt-auto pt-6 border-t border-gray-700">
           <button
             onClick={handleExportGame}
-            disabled={isExporting || loadingAsset !== null}
+            disabled={isExporting || loadingAsset !== null || isLoadingCombinedAi}
             className="w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition duration-200 shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
             {isExporting ? 'Exporting...' : 'Export as ZIP'}

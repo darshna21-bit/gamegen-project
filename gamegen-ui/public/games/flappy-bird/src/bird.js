@@ -85,16 +85,17 @@ export class Bird {
 
         // Immediately apply default bird image and classes in constructor
         this.#isAnimatedAsset = false;
+        const defaultBirdWidth = 43; // Define here for default
+        const defaultBirdHeight = 30; // Define here for default
         try {
-            // Use the <img> tag for the image source
-            this.#birdImageDOM.src = `assets/images/yellowbird-midflap.png`;
-            this.#birdDOM.style.width = `43px`;
-            this.#birdDOM.style.height = `30px`;
+            this.#birdImageDOM.src = `assets/images/yellowbird-midflap.png`; // Corrected path relative to index.html
+            this.#birdDOM.style.width = `${defaultBirdWidth}px`; // Set container div to default bird dimensions
+            this.#birdDOM.style.height = `${defaultBirdHeight}px`; // Set container div to default bird dimensions
             // Clear background-image from the div itself
-            this.#birdDOM.style.setProperty('background-image', ''); 
-            console.log("[Bird.js Debug]: Constructor: Default background-image set to:", this.#birdImageDOM.src);
+            this.#birdDOM.style.setProperty('background-image', 'none'); 
+            console.log("[Bird.js Debug]: Constructor: Default bird image set to:", this.#birdImageDOM.src);
         } catch (e) {
-            console.error("[Bird.js Debug]: Constructor: Error setting default background image styles:", e);
+            console.error("[Bird.js Debug]: Constructor: Error setting default bird image styles:", e);
         }
         this.#birdDOM.classList.add(this.#flapAnimation[0]); // Add initial default CSS class
         console.log("[Bird.js Debug]: Bird constructor: Default yellow bird applied.");
@@ -134,9 +135,9 @@ export class Bird {
         this.#flapAnimation.forEach(cls => this.#birdDOM.classList.remove(cls));
         console.log("[Bird.js Debug]: Removed all flap animation classes.");
 
-        // 2. Reset background image related styles to ensure a clean slate
+        // 2. Clear background-image from the div itself (ensures no conflicting background on the div)
         try {
-            this.#birdDOM.style.setProperty('background-image', ''); // Ensure div's background-image is clear
+            this.#birdDOM.style.setProperty('background-image', 'none'); 
             this.#birdDOM.style.backgroundSize = '';
             this.#birdDOM.style.backgroundPosition = '';
             this.#birdDOM.style.backgroundRepeat = '';
@@ -145,37 +146,31 @@ export class Bird {
             console.error("[Bird.js Debug]: Error clearing background image styles:", e);
         }
 
+        // Determine the target dimensions based on the default bird for consistency
+        const defaultBirdWidth = 43;
+        const defaultBirdHeight = 30;
 
-        // Reset dimensions to default initially, then potentially override
-        // Use current computed width/height or default if not available
-        const currentWidth = this.#birdDOM.offsetWidth > 0 ? this.#birdDOM.offsetWidth : 43;
-        const currentHeight = this.#birdDOM.offsetHeight > 0 ? this.#birdDOM.offsetHeight : 30;
-        this.#birdDOM.style.width = `${currentWidth}px`; 
-        this.#birdDOM.style.height = `${currentHeight}px`; 
-        console.log(`[Bird.js Debug]: Reset bird DOM dimensions to current computed values (${currentWidth}x${currentHeight}px, for safety).`);
-
+        let finalImageUrl = null;
 
         if (assetData && typeof assetData === 'object' && assetData.isAnimated) {
             console.log("[Bird.js Debug]: setImage: Handling animated asset.");
             this.#isAnimatedAsset = true;
             this.#assetPrefix = assetData.prefix;
             this.#assetFrameCount = assetData.count;
-            this.#assetFrameWidth = assetData.frameWidth; 
-            this.#assetFrameHeight = assetData.frameHeight; 
+            // Use provided frame dimensions if available, otherwise fallback to sensible defaults or target bird size
+            this.#assetFrameWidth = assetData.frameWidth || defaultBirdWidth; 
+            this.#assetFrameHeight = assetData.frameHeight || defaultBirdHeight; 
             this.#currentAssetFrame = 0; // Start animation from the first frame
 
-            // Determine if frames are 1-indexed based on prefix
             this.#isFrameOneIndexed = this.#assetPrefix.includes('frame-');
             console.log(`[Bird.js Debug]: Animated asset prefix: ${this.#assetPrefix}, isFrameOneIndexed: ${this.#isFrameOneIndexed}`);
             console.log(`[Bird.js Debug]: Received frameWidth: ${this.#assetFrameWidth}, frameHeight: ${this.#assetFrameHeight}`);
-
 
             // Set the bird DOM element's dimensions to match a single frame of the sprite
             this.#birdDOM.style.width = `${this.#assetFrameWidth}px`;
             this.#birdDOM.style.height = `${this.#assetFrameHeight}px`;
             console.log(`[Bird.js Debug]: Set animated bird DOM dimensions to: ${this.#assetFrameWidth}x${this.#assetFrameHeight}px`);
 
-            // Set the image source for the <img> tag
             const initialFrameIndex = this.#isFrameOneIndexed ? this.#currentAssetFrame + 1 : this.#currentAssetFrame;
             let paddedIndex = String(initialFrameIndex);
             if (this.#assetPrefix.includes('skeleton-animation_')) {
@@ -186,17 +181,15 @@ export class Bird {
                 // No extra padding needed for frame-1.png etc.
             }
 
-            const initialFrameUrl = `${this.#assetPrefix}${paddedIndex}.png`;
-            const finalImageUrl = assetData.imageUrl || initialFrameUrl;
-            console.log(`[Bird.js Debug]: Final Image URL for animated asset (for <img>): ${finalImageUrl}`);
-            try {
-                this.#birdImageDOM.src = finalImageUrl; // Set src for <img>
-                console.log(`[Bird.js Debug]: Set <img> src to: ${this.#birdImageDOM.src}`);
-            } catch (e) {
-                console.error("[Bird.js Debug]: Error setting animated <img> src:", e);
+            finalImageUrl = `${this.#assetPrefix}${paddedIndex}.png`;
+            // If the animated asset object itself contains a direct imageUrl (like base64 for the first frame)
+            if (assetData.imageUrl) {
+                finalImageUrl = assetData.imageUrl;
             }
-            this.applyPositionAndRotation(); // Ensure position is applied after size change
-        } else if (assetData && (typeof assetData === 'string' || (typeof assetData === 'object' && assetData.url))) {
+
+            console.log(`[Bird.js Debug]: Final Image URL for animated asset (for <img>): ${finalImageUrl.substring(0, 50)}...`);
+
+        } else if (assetData && (typeof assetData === 'string' || (typeof assetData === 'object' && (assetData.url || assetData.imageUrl)))) { // MODIFIED CONDITION
             console.log("[Bird.js Debug]: setImage: Handling static image asset.");
             this.#isAnimatedAsset = false;
             this.#assetPrefix = null;
@@ -204,57 +197,63 @@ export class Bird {
             this.#currentAssetFrame = 0;
             this.#isFrameOneIndexed = false; // Reset for static images
 
-            const imageUrl = typeof assetData === 'string' ? assetData : assetData.url;
-            console.log("[Bird.js Debug]: Attempting to load static bird image from URL:", imageUrl);
+            // MODIFIED: Robustly get the image URL from string or object (prioritize imageUrl)
+            finalImageUrl = typeof assetData === 'string' ? assetData : (assetData.imageUrl || assetData.url);
 
-            const img = new Image();
-            img.onload = () => {
-                console.log(`[Bird.js Debug]: Static image loaded: ${imageUrl}, Natural dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
-                // Set bird DOM element dimensions based on loaded image's intrinsic size
-                this.#birdDOM.style.width = `${img.naturalWidth}px`;
-                this.#birdDOM.style.height = `${img.naturalHeight}px`;
-                console.log(`[Bird.js Debug]: Set static bird DOM dimensions to: ${img.naturalWidth}x${img.naturalHeight}px`);
+            console.log("[Bird.js Debug]: Attempting to load static bird image from URL:", finalImageUrl.substring(0, 50));
 
-                // Apply image source to the <img> tag
-                try {
-                    this.#birdImageDOM.src = imageUrl; // Set src for <img>
-                    console.log(`[Bird.js Debug]: Set <img> src to: ${this.#birdImageDOM.src}`);
-                } catch (e) {
-                    console.error("[Bird.js Debug]: Error setting static <img> src:", e);
-                }
-
-                // Important: Re-apply bird's current position after dimensions might have changed
-                // This ensures it's visually aligned correctly after resize.
-                this.applyPositionAndRotation();
-            };
-            img.onerror = () => {
-                console.error("[Bird.js Debug]: Failed to load bird image:", imageUrl);
-                // Fallback to default bird if image fails to load
-                this.setImage(null);
-            };
-            img.src = imageUrl;
-        } else {
-            console.log("[Bird.js Debug]: setImage: Reverting to default CSS bird.");
+        } else { // Reverting to default CSS bird (assetData is null or invalid)
+            console.log("[Bird.js Debug]: setImage: Reverting to default CSS bird due to no valid URL found.");
             this.#isAnimatedAsset = false;
             this.#assetPrefix = null;
             this.#assetFrameCount = 0;
             this.#currentAssetFrame = 0;
             this.#isFrameOneIndexed = false; // Reset for default
 
-            // Explicitly set default image path and dimensions for CSS-based bird
             try {
                 this.#birdImageDOM.src = `assets/images/yellowbird-midflap.png`; // Set src for <img>
-                this.#birdDOM.style.width = `43px`;
-                this.#birdDOM.style.height = `30px`;
-                // Clear background-image from the div itself
-                this.#birdDOM.style.setProperty('background-image', ''); 
+                this.#birdDOM.style.width = `${defaultBirdWidth}px`; // Explicitly set dimensions for default
+                this.#birdDOM.style.height = `${defaultBirdHeight}px`; // Explicitly set dimensions for default
+                this.#birdDOM.style.setProperty('background-image', 'none'); 
                 console.log("[Bird.js Debug]: Applied default yellow bird image and class. Current <img> src:", this.#birdImageDOM.src);
             } catch (e) {
-                console.error("[Bird.js Debug]: Error setting default background image styles:", e);
+                console.error("[Bird.js Debug]: Error setting default bird image styles:", e);
             }
-            // Re-add the initial default CSS class for flapping animation
-            this.#birdDOM.classList.add(this.#flapAnimation[0]); // Re-add a default class
+            this.#birdDOM.classList.add(this.#flapAnimation[0]); // Re-add a default class for CSS flapping
             this.applyPositionAndRotation(); // Ensure position is applied for default bird
+            return; // Exit here as we've handled the default case
+        }
+
+        // Common logic for loading and applying the image (for both animated and static)
+        if (finalImageUrl) {
+            const img = new Image();
+            img.onload = () => {
+                console.log(`[Bird.js Debug]: Image loaded: ${finalImageUrl.substring(0, 50)}..., Natural dimensions: ${img.naturalWidth}x${img.naturalHeight}`);
+                
+                // Only apply fixed dimensions if it's a static (non-animated) AI-generated bird
+                if (!this.#isAnimatedAsset) {
+                    this.#birdDOM.style.width = `${defaultBirdWidth}px`;
+                    this.#birdDOM.style.height = `${defaultBirdHeight}px`;
+                    console.log(`[Bird.js Debug]: Set static bird DOM dimensions to FIXED: ${defaultBirdWidth}x${defaultBirdHeight}px`);
+                }
+
+                try {
+                    this.#birdImageDOM.src = finalImageUrl; // Set src for <img>
+                    console.log(`[Bird.js Debug]: Set <img> src to: ${this.#birdImageDOM.src.substring(0, 50)}...`);
+                } catch (e) {
+                    console.error("[Bird.js Debug]: Error setting <img> src:", e);
+                }
+                this.applyPositionAndRotation(); // Important: Re-apply bird's current position after dimensions might have changed
+            };
+            img.onerror = () => {
+                console.error("[Bird.js Debug]: Failed to load bird image:", finalImageUrl.substring(0, 50));
+                // Fallback to default bird if image fails to load
+                this.setImage(null);
+            };
+            img.src = finalImageUrl;
+        } else {
+             console.warn("[Bird.js Debug]: setImage: No valid finalImageUrl found to load.");
+             this.setImage(null); // Fallback if somehow no URL was determined
         }
     }
 
@@ -276,9 +275,10 @@ export class Bird {
         this.#birdDOM.style.display = 'block';
 
         // When resetting, if it's not an animated asset, ensure a default flap class is active
+        // Clear all classes first to prevent accumulation
+        this.#flapAnimation.forEach(cls => this.#birdDOM.classList.remove(cls));
         if (!this.#isAnimatedAsset) {
             console.log("[Bird.js Debug]: Resetting flap animation classes for non-animated bird.");
-            this.#flapAnimation.forEach(cls => this.#birdDOM.classList.remove(cls)); // Clear all
             this.#currentFlap = 0; // Reset flap index
             this.#birdDOM.classList.add(this.#flapAnimation[this.#currentFlap]); // Add initial
         }
@@ -323,7 +323,7 @@ export class Bird {
             // console.log("animateSprite: Attempting to load animated frame:", frameUrl); // Uncomment if needed for debugging
             try {
                 this.#birdImageDOM.src = frameUrl; // Set src for <img>
-                console.log(`[Bird.js Debug]: animateSprite: Set <img> src to: ${this.#birdImageDOM.src}`);
+                console.log(`[Bird.js Debug]: Set <img> src to: ${this.#birdImageDOM.src.substring(0, 50)}...`);
             } catch (e) {
                 console.error("[Bird.js Debug]: Error setting animated sprite <img> src:", e);
             }

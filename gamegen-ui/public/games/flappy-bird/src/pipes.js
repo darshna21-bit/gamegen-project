@@ -204,7 +204,7 @@ export class Pipe {
         this.#bottomPipe.style.height = `${this.#PIPE_SEGMENT_HEIGHT}px`;
         // Add temporary visual border for debugging collision box
         // this.#bottomPipe.style.outline = '2px solid rgba(255, 0, 0, 0.5)';
-         // Semi-transparent red border
+           // Semi-transparent red border
         this.#skyDOM.appendChild(this.#bottomPipe);
 
         // Create top pipe element

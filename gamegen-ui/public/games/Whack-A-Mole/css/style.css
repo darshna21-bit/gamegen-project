@@ -136,7 +136,7 @@ body {
   transform: translateX(-2.5rem);
 }
 .view main > div {
-  cursor: url('hammer2.png'), auto;	
+  cursor: url('hammer2.png'), auto; 
 }
 .view .controls {
   display: grid;
@@ -271,6 +271,7 @@ main .side-controls--container span.none {display: none;}
   position: relative;
   overflow: hidden;
 }
+
 .mole {
   background-image: url(./mole.png);
   position: relative;
@@ -293,7 +294,16 @@ main .side-controls--container span.none {display: none;}
   left: 0;
   width: 100%;
   z-index: 1;
+  /* --- NEW LINE ADDED HERE: Transition for smoother hiding/showing --- */
+  transition: opacity 0.3s ease-in-out; 
 }
+
+/* --- NEW RULE ADDED BELOW FOR HIDING HOLE IMAGE --- */
+.up .hole img {
+    opacity: 0; /* Hide the hole image when the parent '.hole' has the 'up' class */
+    /* Using opacity allows for a smoother transition than display: none; */
+}
+
 
 .hud {
   display: flex;
@@ -481,11 +491,11 @@ td {
 }
 .powered-by p:first-of-type {
   display: inline;
-  color:  #3328fe;
+  color:   #3328fe;
 }
 .powered-by p {
   display: inline;
-  color:  #3328fe;
+  color:   #3328fe;
 }
 .powered-by {
   background-color: #fff;
@@ -528,19 +538,7 @@ td {
     padding: .75rem 1rem;
   }
   main .side-controls--container-2 {
-    margin-top: 0.5rem;
-    /* padding: .75rem; */
-    background-color: #00000055;
-    background-color: #fff;
-    box-shadow: 0px 2px 6px 3px #33333330;
-    display: grid;
-    border-radius: 5px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    color: #fff;
-    text-decoration: none;
+    display: none;
   }
   main .side-controls--container-2 p {
     color: #3328fe;

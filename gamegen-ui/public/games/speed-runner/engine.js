@@ -8,7 +8,7 @@ let appObstacleSpawnIntervalMs = 1000; // Corresponds to React's 'obstacleSpawnD
 
 // --- MODIFIED LINE: appMainCharacterImageUrl changed to an array to hold multiple URLs
 // This now allows flexibility for future animated characters, but for now, we'll use the first. ---
-let appMainCharacterImageUrls = ['./assets/player.png']; // Default path from React config
+let appMainCharacterImageUrls = ['./assets/images/ships/ship1.png']; // Default path from React config (corrected to match index.html)
 
 let appBackgroundImageUrl = './assets/background.png'; // Default path from React config
 
@@ -25,6 +25,8 @@ const blobImages = [blob1, blob2, blob3, blob4, blob5]
 
 //Elements
 const playerObject = document.getElementById("playerObject")
+// NEW: Get reference to the inner <img> tag
+const playerShipImage = document.getElementById("playerShip"); 
 const gameArea = document.getElementById("gameArea")
 const pauseBanner = document.getElementById("pauseBanner")
 const pauseBtn = document.getElementById("pauseBtn")
@@ -68,24 +70,53 @@ let updateScoreIntervalId;
 
 // --- NEW: Function to apply current game parameters and restart intervals ---
 function applyGameParameters() {
+    console.log("[Speed Runner Debug]: applyGameParameters called.");
     // Apply initial game speed
     blockSpeed = appInitialBlockSpeed;
 
     // Apply main character image(s) - using the first available image
     if (playerObject) {
-        const playerImageUrl = appMainCharacterImageUrls.length > 0 ? appMainCharacterImageUrls[0] : './assets/player.png';
+        console.log("[Speed Runner Debug]: playerObject found.");
+        const playerImageUrl = appMainCharacterImageUrls.length > 0 ? appMainCharacterImageUrls[0] : './assets/images/ships/ship1.png'; // Corrected default path
         playerObject.style.backgroundImage = `url(${playerImageUrl})`;
         playerObject.style.backgroundSize = 'contain';
         playerObject.style.backgroundRepeat = 'no-repeat';
         playerObject.style.backgroundPosition = 'center';
+
+        // --- NEW/MODIFIED: Ensure playerObject has fixed dimensions ---
+        // Match the dimensions of the default playerShip image
+        playerObject.style.width = '60px'; // From .playerShip in style.css
+        playerObject.style.height = '80px'; // From .playerShip in style.css
+        console.log(`[Speed Runner Debug]: playerObject dimensions set to ${playerObject.style.width}x${playerObject.style.height}.`);
+
+        // --- NEW: Hide the inner <img> tag if an AI image is applied to the parent div ---
+        if (playerShipImage) {
+            console.log("[Speed Runner Debug]: playerShipImage found.");
+            if (playerImageUrl !== './assets/images/ships/ship1.png') { // If it's an AI image (not the default path)
+                playerShipImage.style.display = 'none'; // Hide the original <img>
+                console.log("[Speed Runner Debug]: Hiding playerShipImage (default img).");
+            } else {
+                playerShipImage.style.display = 'block'; // Show original <img> for default
+                playerObject.style.backgroundImage = 'none'; // Clear background if using default <img>
+                console.log("[Speed Runner Debug]: Showing playerShipImage (default img), clearing playerObject background.");
+            }
+        } else {
+            console.warn("[Speed Runner Debug]: playerShipImage (inner <img>) NOT found!");
+        }
+    } else {
+        console.warn("[Speed Runner Debug]: playerObject (player div) NOT found!");
     }
 
     // Apply background image
     if (gameArea) {
+        console.log("[Speed Runner Debug]: gameArea found.");
         gameArea.style.backgroundImage = `url(${appBackgroundImageUrl})`;
         gameArea.style.backgroundSize = 'cover';
         gameArea.style.backgroundRepeat = 'no-repeat';
         gameArea.style.backgroundPosition = 'center';
+        console.log(`[Speed Runner Debug]: gameArea background set to: ${gameArea.style.backgroundImage}`);
+    } else {
+        console.warn("[Speed Runner Debug]: gameArea NOT found!");
     }
 
     // Clear and restart block spawning interval with new delay
@@ -398,6 +429,10 @@ window.addEventListener('message', function(event) {
                     playerObject.style.backgroundSize = 'contain'; // Ensure proper sizing
                     playerObject.style.backgroundRepeat = 'no-repeat'; // Prevent tiling
                     playerObject.style.backgroundPosition = 'center'; // Center the image
+                    // --- NEW: Hide the inner <img> tag if an AI image is applied to the parent div ---
+                    if (playerShipImage) {
+                        playerShipImage.style.display = 'none'; // Hide the original <img>
+                    }
                 }
                 console.log("[Speed Runner Game]: Updated player images.", appMainCharacterImageUrls);
             } else {

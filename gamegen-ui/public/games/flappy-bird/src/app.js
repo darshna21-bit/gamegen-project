@@ -1,4 +1,4 @@
-// gamegen-ui/games/flappy-bird/app.js
+// gamegen-ui/public/games/flappy-bird/src/app.js
 
 import { Bird } from "./bird.js";
 import { Pipe } from "./pipes.js";
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("message", (event) => {
         // IMPORTANT: For security, verify event.origin in production!
         // if (event.origin !== 'http://localhost:3000' && event.origin !== 'https://your-app-domain.com') {
-        //     return; // Discard messages from untrusted origins
+        //     return; // Discard messages from untrusted origins
         // }
 
         // Destructure properties directly from event.data
@@ -196,26 +196,26 @@ class FlappyBird {
         );
         // Explicitly set the default bird image/animation after construction
         this.#bird.setImage({
-            url: 'assets/images/yellowbird-midflap.png',
+            url: 'assets/images/yellowbird-midflap.png', // Path relative to index.html
             isAnimated: false // Default bird is not sprite animated, uses CSS classes
         });
         this.#bird.update(0); // This applies BIRD_START_Y to its 'bottom' style
 
         // Set initial default assets (pipes and background)
-        this.#currentPipeImageUrl = '/games/flappy-bird/assets/images/pipe.png';
-        // Corrected path for background image
-        this.#currentBackgroundImageUrl = '/games/flappy-bird/assets/images/background.png'; 
+        // Paths relative to index.html
+        this.#currentPipeImageUrl = 'assets/images/pipe.png';
+        this.#currentBackgroundImageUrl = 'assets/images/background.png'; 
         this.applyBackgroundImage(this.#currentBackgroundImageUrl); // Apply default background on load
 
         // Initialize Scores
         this.#score = 0;
         this.#highScore = this.getHighScore();
-        console.log(`[App.js Debug]: Constructor - Initial #highScore after getHighScore(): ${this.#highScore}`); // NEW LOG
+        console.log(`[App.js Debug]: Constructor - Initial #highScore after getHighScore(): ${this.#highScore}`);
 
         // Bind event handlers to the current instance
         this.controls = this.controls.bind(this);
         document.addEventListener("keydown", this.controls); // Changed to keydown for immediate flap
-        document.addEventListener("keyup", this.handleKeyUp); // NEW: Add keyup listener for restart control
+        document.addEventListener("keyup", this.handleKeyUp); // Add keyup listener for restart control
     }
 
     /**
@@ -376,7 +376,7 @@ class FlappyBird {
         );
 
         // Re-initialize bird flap animation (important for restarts with custom assets)
-        this.#bird.reset(BIRD_START_X, BIRD_START_Y); // Reset position and internal state
+        this.#bird.reset(BIRD_START_X, BIRD_START_Y); // Reset bird to initial state
         this.#bird.update(0); // Apply the position to the DOM immediately
         this.resetFlapAnimation(); // This will use the already set image
 
@@ -453,10 +453,10 @@ class FlappyBird {
             if (!this.#isCollision && !this.#isGameOver) {
                 pipe.update();
                 // Check for collision with the bird
-                if (pipe.checkCollision(this.#bird)) { // <-- Pass the bird object
-                    console.log("[App.js Debug]: Collision detected by pipe.checkCollision! Triggering game over."); // NEW LOG
+                if (pipe.checkCollision(this.#bird)) {
+                    console.log("[App.js Debug]: Collision detected by pipe.checkCollision! Triggering game over.");
                     this.setCollision();
-                    this.setGameOver(); // <-- ADDED: End game on pipe collision
+                    this.setGameOver(); // End game on pipe collision
                 }
             }
 
@@ -521,7 +521,7 @@ class FlappyBird {
      * Saves the current score as high score if it's greater.
      */
     saveScore() {
-        console.log(`[App.js Debug]: saveScore called. Current #score: ${this.#score}, Current #highScore (before comparison): ${this.#highScore}`); // NEW LOG
+        console.log(`[App.js Debug]: saveScore called. Current #score: ${this.#score}, Current #highScore (before comparison): ${this.#highScore}`);
         if (this.#score > this.#highScore) {
             this.#highScore = this.#score;
             localStorage.setItem("highScore", this.#score.toString()); // Ensure it's stored as a string
@@ -537,7 +537,7 @@ class FlappyBird {
      */
     getHighScore() {
         const storedHighScore = localStorage.getItem("highScore");
-        console.log(`[App.js Debug]: getHighScore called. Raw stored value: '${storedHighScore}'`); // NEW LOG
+        console.log(`[App.js Debug]: getHighScore called. Raw stored value: '${storedHighScore}'`);
         const highScore = storedHighScore ? parseInt(storedHighScore, 10) : 0;
         console.log(`[App.js Debug]: Retrieved High Score (parsed): ${highScore}`);
         return highScore;
@@ -559,7 +559,7 @@ class FlappyBird {
         this.#gameOverHighScoreDOM.innerHTML = "";
         // Check if #highScore is valid before calling toString
         if (typeof this.#highScore === 'number' && !isNaN(this.#highScore)) {
-            const highScoreStr = this.#highScore.toString(); // This is line 552
+            const highScoreStr = this.#highScore.toString();
             for (const digit of highScoreStr) {
                 const img = document.createElement("img");
                 img.src = `assets/images/${digit}.png`;

@@ -97,7 +97,7 @@ window.addEventListener('message', function(event) {
                 Resources.load(finalUrlToUse);
                 // Assign the sprite to all current enemies and any new ones
                 allEnemies.forEach(enemy => {
-                    enemy.sprite = finalUrlToUse;
+                    enemy.sprite = finalUrlTo,s;
                 });
             }
         }
@@ -115,6 +115,9 @@ var Enemy = function(x, y, baseSpeedFactor) {
     this.initialSpeedFactor = baseSpeedFactor;
 
     this.sprite = window.gameSettings.enemySpriteUrl;
+    // Define target dimensions for the enemy sprite
+    this.width = 101; // Standard width of an enemy bug/car
+    this.height = 83; // Standard height of an enemy bug/car
 };
 
 // Update the enemy's position
@@ -133,7 +136,9 @@ Enemy.prototype.update = function(dt) {
 
 // Draw the enemy
 Enemy.prototype.render = function() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    // MODIFIED: Draw with specific width and height
+    // Adjust x, y for centering if needed, but for now, just scale
+    ctx.drawImage(Resources.get(this.sprite), this.x, this.y, this.width, this.height);
 };
 
 // Player class
@@ -142,6 +147,9 @@ var Player = function(x, y, speed) {
     this.y = y;
     this.speed = speed;
     this.sprite = window.gameSettings.playerSpriteUrl;
+    // Define target dimensions for the player sprite
+    this.width = 66; // Standard width of player character
+    this.height = 80; // Standard height of player character
 };
 
 Player.prototype.update = function() {
@@ -150,7 +158,11 @@ Player.prototype.update = function() {
 
 // Draw the player and display score/level/time
 Player.prototype.render = function() {
-    ctx.drawImage(Resources.get(this.sprite), this.x, this.y);
+    // MODIFIED: Draw with specific width and height
+    // Adjust x, y to center the new image within the original player bounds
+    const playerRenderX = this.x - (this.width / 2) + 50; // Roughly center horizontally in a 101px block
+    const playerRenderY = this.y - (this.height / 2) + 83; // Roughly center vertically in an 83px block
+    ctx.drawImage(Resources.get(this.sprite), playerRenderX, playerRenderY, this.width, this.height);
     displayScoreLevel(score, gameLevel, timeLeft);
 };
 
@@ -200,6 +212,9 @@ var initializePlayerPosition = function() {
 };
 
 var checkCollision = function(anEnemy) {
+    // Collision detection logic remains the same, assuming original sprite dimensions for hitboxes.
+    // If AI-generated sprites have vastly different aspect ratios or transparent areas,
+    // this collision logic might need adjustment based on the new visual bounds.
     if (
         player.y + 131 >= anEnemy.y + 90
         && player.x + 25 <= anEnemy.x + 88
