@@ -1,9 +1,9 @@
-// gamegen-ui/src/components/GameEditor.js
+//gameeditor.js
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
-const userSessionId = uuidv4();
+const userSessionId = uuidv4(); // This generates a unique ID for the user's session
 
 // --- Centralized Game Configuration (Keep as is) ---
 const gameConfigs = {
@@ -147,8 +147,11 @@ export default function GameEditor({
   const [isLoadingCombinedAi, setIsLoadingCombinedAi] = useState(false);
 
   const [loadingAsset, setLoadingAsset] = useState(null);
-  const [isExporting, setIsExporting] = useState(false);
   const [difficulty, setDifficulty] = useState('medium');
+
+  // NEW STATE FOR EXPORTING AND MESSAGES
+  const [isExporting, setIsExporting] = useState(false); // Already existed, but ensuring it's here
+  const [exportMessage, setExportMessage] = useState(''); // New state for export feedback
 
   const iframeRef = useRef(null);
 
@@ -379,49 +382,63 @@ export default function GameEditor({
     );
   }
 
+  // --- EXPORT GAME FUNCTION (MODIFIED) ---
   const handleExportGame = async () => {
+    // Basic validation before starting export
+    if (!gameId || !gameSettings || !currentAssets) {
+        alert('Please ensure a game template is selected and assets/settings are loaded before exporting.');
+        return;
+    }
+
     setIsExporting(true);
+    setExportMessage('Preparing game for export...');
     console.log("%cInitiating game export...", 'color: yellow;');
-    console.log("%cCurrent Game Parameters:", 'color: yellow;', gameSettings);
-    console.log("%cCurrent AI Asset Server Paths for this game (from currentAssets state):", 'color: yellow;', currentAssets); // Use currentAssets
+    console.log("%cCurrent Game Parameters (to be sent as gameParameters):", 'color: yellow;', gameSettings);
+    console.log("%cCurrent AI Assets (to be sent as aiAssetPaths):", 'color: yellow;', currentAssets);
 
     try {
         const response = await axios.post(`http://localhost:5000/api/export/${gameId}`, {
-            gameParameters: gameSettings,
-            aiAssetPaths: currentAssets, // Correct: Use currentAssets which stores the Base64 URLs/objects
-            userSessionId: userSessionId,
+            gameParameters: gameSettings, // Sending gameSettings as gameParameters
+            aiAssetPaths: currentAssets, // Sending currentAssets as aiAssetPaths
+            userSessionId: userSessionId, // Unique session ID for temp file naming
         }, {
-            responseType: 'blob',
+            responseType: 'blob', // IMPORTANT: This tells Axios to expect a binary response (the zip file)
         });
 
+        // Create a URL for the blob and trigger download
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `${gameId}_custom_game.zip`);
+        link.setAttribute('download', `${gameId}_custom_game.zip`); // Set the download filename
         document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        link.click(); // Programmatically click the link to start download
+        link.parentNode.removeChild(link); // Clean up the temporary link element
+        window.URL.revokeObjectURL(url); // Release the object URL
 
+        setExportMessage('Game exported successfully! Check your downloads folder.');
+        alert("Your custom game has been downloaded!"); // Use alert as a final confirmation
         console.log("%cGame exported successfully!", 'color: green;');
-        alert("Your custom game has been downloaded!");
+
     } catch (error) {
-        console.error('%cError during game export:', 'color: red;', error.response ? error.response.data : error.message);
+        console.error('%cError during game export:', 'color: red;', error);
         let errorMessage = 'Failed to export game. Please check the console for details.';
+
+        // Attempt to parse error response if it's a blob (e.g., server sent JSON error as blob)
         if (error.response && error.response.data instanceof Blob) {
             try {
                 const errorText = await error.response.data.text();
                 const errorJson = JSON.parse(errorText);
                 errorMessage += ` Server message: ${errorJson.message || errorText.substring(0, 100)}...`;
             } catch (parseError) {
-                errorMessage += ` Server message: ${error.response.data.text().substring(0, 100)}...`;
+                errorMessage += ` Server message (non-JSON blob): ${error.response.statusText || 'Unknown error'}`;
             }
         } else if (error.response && error.response.data && typeof error.response.data.message === 'string') {
             errorMessage += ` Server message: ${error.response.data.message}`;
-        } else if (error.response && error.response.status) {
-            errorMessage += ` Server responded with status: ${error.response.status}`;
+        } else if (error.message) {
+            errorMessage += ` Network/Client error: ${error.message}`;
         }
-        alert(errorMessage);
+        setExportMessage(errorMessage);
+        alert(errorMessage); // Use alert for critical feedback
     } finally {
         setIsExporting(false);
     }
@@ -480,7 +497,7 @@ export default function GameEditor({
             ></textarea>
             <button
                 onClick={handleGenerateCombinedAi}
-                disabled={isLoadingCombinedAi}
+                disabled={isLoadingCombinedAi || isExporting}      /* Disable if exporting */
                 className="w-full inline-flex items-center justify-center rounded-md border border-gray-600 bg-purple-600 px-4 py-2 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:bg-purple-400 disabled:cursor-not-allowed transition duration-200 shadow"
             >
                 {isLoadingCombinedAi ? 'Generating All...' : 'Generate Game with AI'}
@@ -555,11 +572,12 @@ export default function GameEditor({
                 id={`prompt-${asset.type}`}
                 value={aiPromptInput[asset.type] || ''}
                 onChange={(e) => setAiPromptInput(prev => ({ ...prev, [asset.type]: e.target.value }))}
+                placeholder={asset.promptPlaceholder}       /* Use placeholder from config */
                 className="block w-full flex-1 rounded-l-md border-gray-600 focus:ring-purple-500 focus:border-purple-500 text-base px-3 py-2 placeholder-gray-500 bg-gray-800 text-white mb-3"
               />
               <button
                 onClick={() => handleGenerateAsset(asset.type, aiPromptInput[asset.type])}
-                disabled={loadingAsset === asset.type}
+                disabled={loadingAsset === asset.type || isExporting || isLoadingCombinedAi}    /* Disable if exporting or combined AI is loading */
                 className="inline-flex items-center justify-center rounded-r-md border border-gray-600 bg-purple-600 px-4 py-2 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:bg-purple-400 disabled:cursor-not-allowed transition duration-200 shadow"
               >
                 {loadingAsset === asset.type ? 'Generating...' : 'Generate'}
@@ -586,7 +604,7 @@ export default function GameEditor({
                     <img
                         src={typeof currentAssets[asset.type] === 'string'
                             ? currentAssets[asset.type]
-                            : (currentAssets[asset.type].url) || currentAssets[asset.type].defaultAssetPath
+                            : (currentAssets[asset.type].url) || asset.defaultAssetPath // Fallback to defaultAssetPath if url is not present
                            }
                         alt={asset.label}
                         className="mx-auto max-w-[120px] max-h-[120px] object-contain border border-gray-600 rounded-md shadow"
@@ -601,11 +619,16 @@ export default function GameEditor({
         <div className="mt-auto pt-6 border-t border-gray-700">
           <button
             onClick={handleExportGame}
-            disabled={isExporting || loadingAsset !== null || isLoadingCombinedAi}
+            disabled={isExporting || loadingAsset !== null || isLoadingCombinedAi} // Disable if any AI generation or export is in progress
             className="w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition duration-200 shadow-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
             {isExporting ? 'Exporting...' : 'Export as ZIP'}
           </button>
+          {exportMessage && ( // Display export messages
+              <p className="text-sm mt-2 text-center text-gray-400">
+                  {exportMessage}
+              </p>
+          )}
         </div>
       </div>
     </div>

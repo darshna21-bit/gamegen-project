@@ -1,15 +1,29 @@
 // app.js
 
-// --- START OF CHANGES FOR REACT INTEGRATION ---
+// --- START OF CHANGES FOR REACT INTEGRATION & EXPORT ---
 
-// Define a global object to store game settings from the React app
+// Define a global object to store game settings.
+// IMPORTANT: For exported games, EXPORTED_GAME_PARAMETERS and EXPORTED_CURRENT_ASSETS
+// will be injected by the backend BEFORE this script runs.
+// We prioritize these injected values. If they don't exist (i.e., in editor preview),
+// we fall back to the default values.
+
+// Check if EXPORTED_GAME_PARAMETERS and EXPORTED_CURRENT_ASSETS exist (injected by backend)
+const exportedParams = typeof EXPORTED_GAME_PARAMETERS !== 'undefined' ? EXPORTED_GAME_PARAMETERS : {};
+const exportedAssets = typeof EXPORTED_CURRENT_ASSETS !== 'undefined' ? EXPORTED_CURRENT_ASSETS : {};
+
 window.gameSettings = {
-    obstacleSpeed: 2,         // Default from React config (multiplier)
-    trafficDensity: 0.5,
-    playerMoveDelay: 100,
-    gameDuration: 180,
-    playerSpriteUrl: 'images/char-boy.png',
-    enemySpriteUrl: 'images/enemy-bug.png'
+    // Merge exported parameters first, then fall back to hardcoded defaults
+    obstacleSpeed: exportedParams.obstacleSpeed !== undefined ? exportedParams.obstacleSpeed : 2,
+    trafficDensity: exportedParams.trafficDensity !== undefined ? exportedParams.trafficDensity : 0.5,
+    playerMoveDelay: exportedParams.playerMoveDelay !== undefined ? exportedParams.playerMoveDelay : 100,
+    gameDuration: exportedParams.gameDuration !== undefined ? exportedParams.gameDuration : 180,
+
+    // Merge exported assets first, then fall back to hardcoded default paths
+    // Note: aiAssetPaths from backend sends Base64, which will be directly used.
+    // If it's undefined (editor mode or no AI asset), use the local path.
+    playerSpriteUrl: exportedAssets.character || 'images/char-boy.png',
+    enemySpriteUrl: exportedAssets.obstacle || 'images/enemy-bug.png'
 };
 
 // Global variables for game timer and interval
@@ -75,9 +89,9 @@ window.addEventListener('message', function(event) {
             return;
         }
 
-        // --- START OF MODIFICATION ---
+        // --- START OF MODIFICATION for live preview ---
         // Ensure the new asset is loaded by Resources BEFORE assigning it.
-        // This is the key change.
+        // This is the key change for live updates.
         if (message.assetType === 'character') {
             // Only update and load if the URL is actually new to prevent unnecessary reloads
             if (window.gameSettings.playerSpriteUrl !== finalUrlToUse) {
@@ -85,6 +99,10 @@ window.addEventListener('message', function(event) {
                 // Load the new sprite into the Resources cache
                 Resources.load(finalUrlToUse);
                 // Assign the sprite to the player object immediately after starting load
+                // We need to wait for resources to finish loading before rendering
+                // For live preview, a simple re-assignment is often enough, but a callback
+                // on Resources.load might be more robust if rendering heavily depends on it.
+                // For now, assume Resources.get will eventually return the image once loaded.
                 if (player) {
                     player.sprite = finalUrlToUse;
                 }
@@ -96,16 +114,18 @@ window.addEventListener('message', function(event) {
                 // Load the new sprite into the Resources cache
                 Resources.load(finalUrlToUse);
                 // Assign the sprite to all current enemies and any new ones
-                allEnemies.forEach(enemy => {
-                    enemy.sprite = finalUrlTo,s;
-                });
+                if (allEnemies) {
+                    allEnemies.forEach(enemy => {
+                        enemy.sprite = finalUrlToUse;
+                    });
+                }
             }
         }
-        // --- END OF MODIFICATION ---
+        // --- END OF MODIFICATION for live preview ---
     }
 });
 
-// --- END OF CHANGES FOR REACT INTEGRATION ---
+// --- END OF CHANGES FOR REACT INTEGRATION & EXPORT ---
 
 // Enemies our player must avoid
 var Enemy = function(x, y, baseSpeedFactor) {
@@ -336,12 +356,13 @@ function initializeGame() {
     timeLeft = window.gameSettings.gameDuration; // Set initial time from settings
     displayScoreLevel(score, gameLevel, timeLeft); // Display initial time
 
-    // --- START OF MODIFICATION ---
-    // Ensure initial default sprites are loaded by Resources.
-    // This is crucial for the very first render before any AI assets are generated.
+    // --- START OF MODIFICATION for export ---
+    // Ensure initial default/exported sprites are loaded by Resources.
+    // This is crucial for the very first render before any AI assets are generated,
+    // and for exported games where AI assets are loaded from file.
     Resources.load(window.gameSettings.playerSpriteUrl);
     Resources.load(window.gameSettings.enemySpriteUrl);
-    // --- END OF MODIFICATION ---
+    // --- END OF MODIFICATION for export ---
 }
 
 // NEW: Function to be called when the START button is clicked

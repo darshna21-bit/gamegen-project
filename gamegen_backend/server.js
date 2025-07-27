@@ -1,5 +1,3 @@
-// backend/server.js
-
 require('dotenv').config(); // MUST be at the very top to load .env variables
 
 const express = require('express');
@@ -8,7 +6,10 @@ const fs = require('fs'); // Import the regular 'fs' module for createWriteStrea
 const fsp = require('fs/promises'); // Use fsp for promise-based file operations (like readFile, mkdir, unlink)
 const cors = require('cors');
 const archiver = require('archiver'); // For creating zip files
-const fetch = require('node-fetch').default; // <-- CORRECTED: ADD .default HERE
+const fetch = require('node-fetch').default; 
+
+// NEW: Import fs-extra for robust directory copying/deletion
+const fse = require('fs-extra'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,7 +25,11 @@ app.use(express.json({ limit: '50mb' })); // To parse JSON request bodies, incre
 const PROJECT_ROOT_DIR = path.join(__dirname, '..'); // Points to GAMEGENPROJECT
 const REACT_APP_ROOT_DIR = path.join(PROJECT_ROOT_DIR, 'gamegen-ui'); // Points to gamegen-ui
 const GAMES_DIR = path.join(REACT_APP_ROOT_DIR, 'public', 'games'); // Points to gamegen-ui/public/games
-const AI_ASSETS_DIR = path.join(REACT_APP_ROOT_DIR, 'public', 'ai_assets'); // Used for temporary storage for export
+
+// NEW: Create a dedicated temporary directory within backend for assets during export.
+const TEMP_EXPORT_DIR = path.join(__dirname, 'temp_export_games'); // To hold the copied game + assets
+const TEMP_ASSET_UPLOAD_DIR = path.join(__dirname, 'temp_uploaded_ai_assets'); // To hold temporary Base64 images before zipping
+const TEMP_ZIPS_DIR = path.join(__dirname, 'temp_zips'); // For the final zip files // <-- ADDED THIS LINE FOR TEMP ZIPS DIR
 
 // Helper function to determine main game JS file (UNCHANGED)
 const getMainJsFileName = async (gameTemplateName) => {
@@ -48,7 +53,7 @@ const getMainJsFileName = async (gameTemplateName) => {
 const jsVariableToAssetPathMapping = {
     'flappy-bird': {
         gravity: 'GRAVITY', pipeGap: 'PIPE_GAP', speed: 'PIPE_BASE_SPEED',
-        character: 'NOT_A_DIRECT_VAR_SPECIAL_CASE_BIRD_IMAGE',
+        character: 'NOT_A_DIRECT_VAR_SPECIAL_CASE_BIRD_IMAGE', // Placeholder for bird image
         obstacle: 'currentPipeImageUrl', background: 'currentBackgroundImageUrl',
     },
     'Whack-A-Mole': {
@@ -61,6 +66,7 @@ const jsVariableToAssetPathMapping = {
     },
     'simple-match-3': {
         rows: 'rows', columns: 'columns', scorePerMatch: 'scorePerMatch', gameDuration: 'gameDuration',
+        gemSet: 'currentGemSetUrls', // Ensure this maps to where your game JS expects the array of gem URLs
     },
     'crossy-road': {
         obstacleSpeed: 'obstacleSpeed', trafficDensity: 'trafficDensity', playerMoveDelay: 'playerMoveDelay', gameDuration: 'gameDuration',
@@ -68,189 +74,175 @@ const jsVariableToAssetPathMapping = {
     },
 };
 
-// API Route for Game Export (UNCHANGED from your provided code, as it correctly uses aiAssetPaths from frontend state)
+// API Route for Game Export (MODIFIED)
 app.post('/api/export/:gameId', async (req, res) => {
     const { gameId } = req.params;
-    const { gameParameters, aiAssetPaths, userSessionId } = req.body;
+    const { gameParameters, aiAssetPaths, userSessionId } = req.body; 
 
     if (!gameId || !gameParameters || !aiAssetPaths || !userSessionId) {
-        return res.status(400).json({ success: false, message: 'Missing required export data.' });
+        // Changed to send string for clarity, not JSON
+        return res.status(400).send('Missing game data for export.');
     }
 
     const gameSourcePath = path.join(GAMES_DIR, gameId);
-    const outputZipPath = path.join(__dirname, 'temp', `${gameId}_${userSessionId}_custom_game.zip`);
-    const output = fs.createWriteStream(outputZipPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    // Temp dir for this specific game's files within backend's temp_export_games
+    const outputGameDirPath = path.join(TEMP_EXPORT_DIR, `${gameId}_${userSessionId}`); 
+    // Final zip location
+    const zipFilePath = path.join(TEMP_ZIPS_DIR, `${gameId}_${userSessionId}_custom_game.zip`); 
 
-    await fsp.mkdir(path.join(__dirname, 'temp'), { recursive: true });
-    await fsp.mkdir(AI_ASSETS_DIR, { recursive: true });
+    let cleanedUp = false; // Flag to ensure cleanup runs only once
 
-    output.on('close', () => {
-        console.log(`ZIP created: ${archive.pointer()} total bytes`);
-        res.download(outputZipPath, `${gameId}_custom_game.zip`, async (err) => {
-            if (err) { console.error('Error sending file:', err); res.status(500).json({ success: false, message: 'Failed to send zip file.' }); }
-            else {
-                console.log('Zip file sent successfully.');
-                try { await fsp.unlink(outputZipPath); console.log('Temporary zip file deleted.'); }
-                catch (cleanupErr) { console.error('Error deleting temporary zip file:', cleanupErr); }
+    const cleanup = async () => {
+        if (!cleanedUp) {
+            try {
+                // Remove temporary game directory and zip file
+                if (fs.existsSync(outputGameDirPath)) await fse.remove(outputGameDirPath);
+                if (fs.existsSync(zipFilePath)) await fse.remove(zipFilePath);
+                // Clean up all temporary asset files created during this export process
+                // It's safer to emptyDir than remove/mkdir to avoid permission issues if re-created too fast
+                if (fs.existsSync(TEMP_ASSET_UPLOAD_DIR)) await fse.emptyDir(TEMP_ASSET_UPLOAD_DIR); 
+                console.log('Cleaned up temporary export files.');
+            } catch (cleanupErr) {
+                console.error('Error during cleanup:', cleanupErr);
+            } finally {
+                cleanedUp = true; // Mark as cleaned up regardless of success
             }
-        });
-    });
+        }
+    };
 
-    archive.on('warning', (err) => { if (err.code === 'ENOENT') { console.warn('Archiver warning:', err); } else { throw err; } });
-    archive.on('error', (err) => { console.error('Archiver error:', err); res.status(500).json({ success: false, message: `Archiving failed: ${err.message}` }); });
-
-    archive.pipe(output);
 
     try {
-        const getFiles = async (dir) => {
-            const dirents = await fsp.readdir(dir, { withFileTypes: true });
-            const files = await Promise.all(dirents.map((dirent) => {
-                const res = path.resolve(dir, dirent.name);
-                return dirent.isDirectory() ? getFiles(res) : res;
-            }));
-            return Array.prototype.concat(...files);
-        };
+        // Ensure parent temp directories exist and are empty
+        await fse.emptyDir(TEMP_EXPORT_DIR); // Clear previous exports from this run
+        await fse.emptyDir(TEMP_ZIPS_DIR); // Clear previous zips from this run
+        await fse.emptyDir(TEMP_ASSET_UPLOAD_DIR); // Clear previous temp assets from this run
 
-        const allOriginalGameFiles = await getFiles(gameSourcePath);
-        console.log(`Found ${allOriginalGameFiles.length} original game files.`);
-        const resolvedMainJsFileName = await getMainJsFileName(gameId);
+        // 1. Copy the entire game template to a temporary working directory
+        await fse.copy(gameSourcePath, outputGameDirPath);
+        console.log(`Copied game template from ${gameSourcePath} to ${outputGameDirPath}`);
 
-        for (const filePath of allOriginalGameFiles) {
-            const relativePath = path.relative(gameSourcePath, filePath);
-            const normalizedRelativePath = relativePath.replace(/\\/g, '/');
-            if (normalizedRelativePath !== resolvedMainJsFileName) {
-                archive.file(filePath, { name: normalizedRelativePath });
+        const output = fs.createWriteStream(zipFilePath);
+        const archive = archiver('zip', {
+            zlib: { level: 9 } // Sets the compression level.
+        });
+
+        output.on('close', async () => {
+            console.log(`ZIP created: ${archive.pointer()} total bytes at ${zipFilePath}`);
+            // 4. Send the zip file to the client for download
+            res.download(zipFilePath, `${gameId}_custom_game.zip`, async (err) => {
+                if (err) {
+                    console.error('Error sending file during download:', err);
+                    // Don't send status if headers might already be sent by res.download error
+                }
+                await cleanup(); // Ensure cleanup after download attempt (success or failure)
+            });
+        });
+
+        archive.on('warning', (err) => {
+            if (err.code === 'ENOENT') {
+                console.warn('Archiver warning (file not found):', err);
+            } else {
+                // For other warnings, rethrow them as errors
+                console.error('Archiver error warning:', err); // Log non-ENOENT warnings as errors
+                throw err;
             }
-        }
+        });
 
+        archive.on('error', async (err) => {
+            console.error('Archiver critical error:', err);
+            await cleanup(); // Ensure cleanup on archiving error
+            res.status(500).send(`Archiving failed: ${err.message}`); // Send error response to client
+        });
+
+        archive.pipe(output);
+
+        // --- OLD: index.html injection logic REMOVED. NEW: Inject into main JS file directly ---
+        // 2. Inject global data (gameParameters and aiAssetPaths) directly into the main JS file
         const mainJsFileName = await getMainJsFileName(gameId);
         if (mainJsFileName) {
-            const mainJsFilePath = path.join(gameSourcePath, mainJsFileName);
-            let jsCode = await fsp.readFile(mainJsFilePath, 'utf8');
+            const mainJsFilePathInTemp = path.join(outputGameDirPath, mainJsFileName);
+            let jsCode = await fsp.readFile(mainJsFilePathInTemp, 'utf8');
 
-            console.log(`Modifying ${mainJsFileName} for ${gameId}...`);
-            const mappings = jsVariableToAssetPathMapping[gameId];
-
-            if (mappings) {
-                if (gameId === 'crossy-road' && mainJsFileName === 'js/app.js') {
-                    // This is your original Crossy Road specific export logic if any.
-                    // Keep it here or modify if needed to integrate AI asset paths.
-                    // For now, it's left as is from your provided file.
-                    // This block might need review later for AI asset export for Crossy Road.
-                } else {
-                    for (const paramKey in gameParameters) {
-                        if (mappings[paramKey]) {
-                            const jsVarName = mappings[paramKey];
-                            const newValue = gameParameters[paramKey];
-                            const paramReplacementRegex = new RegExp(`((?:const|let|var)\\s+${jsVarName}\\s*=|this\\.#${jsVarName}\\s*=)[^\\n]*`, 'g');
-                            if (jsCode.match(paramReplacementRegex)) { jsCode = jsCode.replace(paramReplacementRegex, `$1 ${newValue};`); }
-                        }
-                    }
-
-                    // --- MODIFIED EXPORT LOGIC FOR AI ASSETS ---
-                    for (const assetType in aiAssetPaths) {
-                        const aiAssetDataFromFrontend = aiAssetPaths[assetType];
-
-                        if (typeof aiAssetDataFromFrontend === 'string' && aiAssetDataFromFrontend.startsWith('data:image/')) {
-                            // This handles single Base64 image assets (character, background, obstacle etc.)
-                            const base64Content = aiAssetDataFromFrontend.split(',')[1];
-                            const mimeType = aiAssetDataFromFrontend.split(',')[0].split(':')[1].split(';')[0];
-                            const fileExtension = mimeType.split('/')[1] || 'png';
-
-                            const tempFileName = `${gameId}_${assetType}_${Date.now()}.${fileExtension}`;
-                            const tempFilePath = path.join(AI_ASSETS_DIR, tempFileName);
-
-                            await fsp.writeFile(tempFilePath, base64Content, { encoding: 'base64' });
-                            console.log(`Saved temporary AI asset for export: ${tempFilePath}`);
-
-                            const jsVarName = mappings[assetType];
-                            const assetPathInZip = getZipAssetPath(tempFileName, gameId, assetType);
-                            const replacementValue = `'${assetPathInZip}'`;
-
-                            const assetReplacementRegex = new RegExp(
-                                `((?:const|let|var)\\s+${jsVarName}\\s*=|this\\.#${jsVarName}\\s*=)[^\\n]*`, 'g'
-                            );
-
-                            if (jsVarName === 'NOT_A_DIRECT_VAR_SPECIAL_CASE_BIRD_IMAGE' && gameId === 'flappy-bird') {
-                                const birdImageLiteralRegex = /this\.#bird\.setImage\(\{\s*url:\s*['"]assets\/images\/yellowbird-midflap\.png['"],/g;
-                                if (jsCode.match(birdImageLiteralRegex)) { jsCode = jsCode.replace(birdImageLiteralRegex, `this.#bird.setImage({ url: ${replacementValue},`); }
-                            } else if (jsCode.match(assetReplacementRegex)) {
-                                jsCode = jsCode.replace(assetReplacementRegex, `$1 ${replacementValue};`);
-                            } else {
-                                console.warn(`- Asset variable "${jsVarName}" not found or regex did not match in ${mainJsFileName}. For assetType: ${assetType}.`);
-                            }
-
-                            archive.file(tempFilePath, { name: assetPathInZip });
-                            await fsp.unlink(tempFilePath);
-                            console.log(`Added and deleted temporary AI asset: ${tempFilePath}`);
-
-                        } else if (typeof aiAssetDataFromFrontend === 'object' && aiAssetDataFromFrontend !== null && aiAssetDataFromFrontend.urls && Array.isArray(aiAssetDataFromFrontend.urls)) {
-                            // This handles array of Base64 image assets (like gemSet)
-                            console.log(`Processing array of AI assets for export: ${assetType}`);
-                            const jsVarName = mappings[assetType];
-                            const newUrlsInZip = [];
-
-                            for (const [index, dataUrl] of aiAssetDataFromFrontend.urls.entries()) {
-                                const base64Content = dataUrl.split(',')[1];
-                                const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
-                                const fileExtension = mimeType.split('/')[1] || 'png';
-
-                                const tempFileName = `${gameId}_${assetType}_${index}_${Date.now()}.${fileExtension}`;
-                                const tempFilePath = path.join(AI_ASSETS_DIR, tempFileName);
-
-                                await fsp.writeFile(tempFilePath, base64Content, { encoding: 'base64' });
-                                console.log(`Saved temporary AI array asset for export: ${tempFilePath}`);
-
-                                const assetPathInZip = getZipAssetPath(tempFileName, gameId, assetType);
-                                newUrlsInZip.push(assetPathInZip);
-
-                                archive.file(tempFilePath, { name: assetPathInZip });
-                                await fsp.unlink(tempFilePath);
-                                console.log(`Added and deleted temporary AI array asset: ${tempFilePath}`);
-                            }
-
-                            // Replace variable with an array of strings
-                            const replacementValue = `[${newUrlsInZip.map(u => `'${u}'`).join(', ')}]`;
-                            const assetReplacementRegex = new RegExp(
-                                `((?:const|let|var)\\s+${jsVarName}\\s*=|this\\.#${jsVarName}\\s*=)[^\\n]*`, 'g'
-                            );
-                            if (jsCode.match(assetReplacementRegex)) {
-                                jsCode = jsCode.replace(assetReplacementRegex, `$1 ${replacementValue};`);
-                                console.log(`Replaced variable ${jsVarName} with array of paths: ${replacementValue}`);
-                            } else {
-                                console.warn(`- Array asset variable "${jsVarName}" not found or regex did not match in ${mainJsFileName}. For assetType: ${assetType}.`);
-                            }
-                        } else {
-                            console.warn(`Unrecognized AI asset data type for export: ${assetType}. Skipping.`);
-                        }
-                    }
-                }
-            } else {
-                console.warn(`No mappings defined for gameId: ${gameId} in jsVariableToAssetPathMapping.`);
-            }
-
-            console.log(`--- START MODIFIED ${mainJsFileName} CONTENT ---`);
-            console.log(jsCode);
-            console.log(`--- END MODIFIED ${mainJsFileName} CONTENT ---`);
-
-            archive.append(jsCode, { name: mainJsFileName });
-            console.log(`Added modified ${mainJsFileName} to archive.`);
+            // The data will now be defined as top-level const variables in the JS file.
+            // Game's JS files will need to read these.
+            const injectedGlobals = `
+                // Injected by backend for exported game data - DO NOT MODIFY THESE LINES IN EXPORTED GAME
+                const EXPORTED_GAME_PARAMETERS = ${JSON.stringify(gameParameters, null, 2)};
+                const EXPORTED_CURRENT_ASSETS = ${JSON.stringify(aiAssetPaths, null, 2)};
+                // console.log('Injected globals for exported game:', EXPORTED_GAME_PARAMETERS, EXPORTED_CURRENT_ASSETS); // Uncomment in exported game for debugging
+            `;
+            // Prepend the injected globals to the JS file content
+            jsCode = injectedGlobals + jsCode;
+            await fsp.writeFile(mainJsFilePathInTemp, jsCode);
+            console.log(`Injected data into ${mainJsFilePathInTemp}`);
         } else {
-            console.warn(`Skipping JS modification: Main JS file not found for ${gameId}.`);
+            console.warn(`No main JS file found for ${gameId}. Cannot inject parameters/assets directly.`);
+            // Continue even if main JS is not found, other files might still be needed
         }
 
-        archive.finalize();
+
+        // 3. Process AI assets from frontend (aiAssetPaths), save them temporarily, and add them to the zip
+        for (const assetType in aiAssetPaths) {
+            const aiAssetDataFromFrontend = aiAssetPaths[assetType];
+            
+            if (typeof aiAssetDataFromFrontend === 'string' && aiAssetDataFromFrontend.startsWith('data:image/')) {
+                const base64Content = aiAssetDataFromFrontend.split(',')[1];
+                const mimeType = aiAssetDataFromFrontend.split(',')[0].split(':')[1].split(';')[0];
+                const fileExtension = mimeType.split('/')[1] || 'png';
+
+                const tempFileName = `${gameId}_${assetType}_${Date.now()}.${fileExtension}`;
+                const tempFilePath = path.join(TEMP_ASSET_UPLOAD_DIR, tempFileName);
+
+                await fsp.writeFile(tempFilePath, base64Content, { encoding: 'base64' });
+                console.log(`Saved temporary AI asset for export: ${tempFilePath}`);
+
+                // The path within the ZIP relative to the game's root
+                const assetPathInZip = getZipAssetPath(tempFileName, gameId, assetType);
+                // Add the temporary asset file to the archive, placing it correctly relative to the game's root
+                // For Flappy Bird, 'assets/images/...' should be correct if gameId folder is not in zip path
+                archive.file(tempFilePath, { name: assetPathInZip }); 
+                console.log(`Added temp AI asset to archive: ${assetPathInZip}`);
+
+            } else if (typeof aiAssetDataFromFrontend === 'object' && aiAssetDataFromFrontend !== null && aiAssetDataFromFrontend.urls && Array.isArray(aiAssetDataFromFrontend.urls)) {
+                // Handles array of Base64 image assets (like gemSet for Match-3)
+                console.log(`Processing array of AI assets for export: ${assetType}`);
+                for (const [index, dataUrl] of aiAssetDataFromFrontend.urls.entries()) {
+                    const base64Content = dataUrl.split(',')[1];
+                    const mimeType = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+                    const fileExtension = mimeType.split('/')[1] || 'png';
+
+                    const tempFileName = `${gameId}_${assetType}_${index}_${Date.now()}.${fileExtension}`;
+                    const tempFilePath = path.join(TEMP_ASSET_UPLOAD_DIR, tempFileName);
+
+                    await fsp.writeFile(tempFilePath, base64Content, { encoding: 'base64' });
+                    console.log(`Saved temporary AI array asset for export: ${tempFilePath}`);
+
+                    const assetPathInZip = getZipAssetPath(tempFileName, gameId, assetType);
+                    archive.file(tempFilePath, { name: assetPathInZip });
+                    console.log(`Added temp AI array asset to archive: ${assetPathInZip}`);
+                }
+            } else {
+                console.warn(`Unrecognized AI asset data type for export: ${assetType}. Skipping.`);
+            }
+        }
+        
+        // Add the entire copied game directory content to the root of the zip
+        // This includes all original HTML, CSS, and JS files (including the modified main JS file).
+        archive.directory(outputGameDirPath, false); 
+
+        archive.finalize(); // Finalize the archive. This triggers the 'close' event on 'output'.
 
     } catch (error) {
         console.error('Error during game export processing:', error);
-        res.status(500).json({ success: false, message: `Server error during export: ${error.message}` });
+        res.status(500).send(`Server error during export: ${error.message}`); // Send error response
+        await cleanup(); // Ensure cleanup on error
     }
 });
 
 
 // --- Segmind AI Image Generation Route (/api/generate-asset) ---
 // This route acts as a proxy to Segmind's text-to-image and background removal APIs.
+// (UNCHANGED from your provided code, keep as is)
 app.post('/api/generate-asset', async (req, res) => {
     const { prompt, assetType } = req.body;
 
@@ -262,26 +254,24 @@ app.post('/api/generate-asset', async (req, res) => {
         return res.status(500).json({ success: false, error: 'Server configuration error: API key missing.' });
     }
 
-    // --- MODIFIED BLOCK FOR GEMSET GENERATION ---
     if (assetType === 'gemSet') {
         try {
-            const numGems = 6; // We need 6 distinct gems for Simple Match-3
+            const numGems = 6;
             const gemImageUrls = [];
             console.log(`%c[Backend]: Generating ${numGems} gem images for prompt: "${prompt}"`, 'color: yellow;');
 
             for (let i = 0; i < numGems; i++) {
-                // Ensure distinct prompts for each gem
                 const gemPrompt = `${prompt} - gem ${i + 1}, unique, distinct, transparent background, cartoon style, highly detailed, game icon, no numbers or letters`;
                 const textToImagePayload = {
                     prompt: gemPrompt,
-                    width: 256, // Smaller size is usually fine for gems
+                    width: 256,
                     height: 256,
                     samples: 1,
                     scheduler: 'UniPC',
                     num_inference_steps: 25,
                     negative_prompt: "(worst quality, low quality, blurred, text, watermark, writing, ugly, deformed, disfigured)",
                     guidance_scale: 9,
-                    seed: Math.floor(Math.random() * 1000000) + i, // Vary seed for distinct outputs
+                    seed: Math.floor(Math.random() * 1000000) + i,
                     base64: true
                 };
 
@@ -306,7 +296,6 @@ app.post('/api/generate-asset', async (req, res) => {
                 }
                 console.log(`%c[Backend]: Text-to-Image successful for gem ${i + 1}. Proceeding to background removal.`, 'color: green;');
 
-                // Apply background removal to each gem
                 const bgRemovalPayload = { image: base64Image };
                 const bgRemovalResponse = await fetch('https://api.segmind.com/v1/bg-removal-v2', {
                     method: 'POST',
@@ -327,32 +316,27 @@ app.post('/api/generate-asset', async (req, res) => {
                 const transparentImage = transparentImageBuffer.toString('base64');
                 console.log(`%c[Backend]: Background removal successful for gem ${i + 1}.`, 'color: green;');
 
-                gemImageUrls.push(`data:image/png;base64,${transparentImage}`); // Store with data URI prefix
+                gemImageUrls.push(`data:image/png;base64,${transparentImage}`);
             }
 
-            // --- ADDED CONSOLE.LOG HERE TO DEBUG GEMSET ARRAY ---
             console.log(`%c[Backend DEBUG - FINAL GEMSET]: Sending ${gemImageUrls.length} gem URLs to frontend. Checking uniqueness:`, 'color: yellow;');
             gemImageUrls.forEach((url, index) => {
                 console.log(`%c[Backend DEBUG] Gem ${index}: ${url.substring(0, 50)}... (Length: ${url.length})`, 'color: yellow;');
             });
-            // --- END OF CONSOLE.LOG ADDITION ---
 
-            // Send all generated gem images as an array of URLs
-            res.json({ success: true, urls: gemImageUrls }); // Send 'urls' array
-            return; // Important: return after sending response for gemSet
+            res.json({ success: true, urls: gemImageUrls });
+            return;
         } catch (error) {
             console.error('%c[Backend]: Error generating gemSet assets:', 'color: red;', error);
             return res.status(500).json({ success: false, error: `Failed to generate gem set: ${error.message}` });
         }
     }
 
-    // --- Original logic for other single-image asset types (character, background, obstacle) ---
     const textToImageEndpoint = 'https://api.segmind.com/v1/segmind-vega';
     let basePromptSuffix = '';
-    let width = 768; // Default dimensions for general assets
+    let width = 768;
     let height = 768;
 
-    // Customize prompt and dimensions based on the asset type requested by the frontend
     if (assetType === 'character' || assetType === 'moleCharacter') {
         basePromptSuffix = ', game sprite, full body, transparent background, clean edges, isolated character, cartoon style';
         width = 512;
@@ -365,7 +349,7 @@ app.post('/api/generate-asset', async (req, res) => {
         basePromptSuffix = ', game obstacle, detailed, transparent background, isolated';
         width = 512;
         height = 512;
-    } else { // Fallback for any other type, or if a specific prompt is not needed
+    } else {
         basePromptSuffix = ', game asset, detailed, high quality';
     }
 
@@ -400,7 +384,7 @@ app.post('/api/generate-asset', async (req, res) => {
 
         if (assetType === 'background' || assetType === 'ground') {
             console.log(`%cSkipping background removal for a ${assetType} asset.`, 'color: grey;');
-            res.json({ success: true, image: base64Image }); // Send single image in 'image' field
+            res.json({ success: true, image: base64Image });
             return;
         }
 
@@ -427,11 +411,9 @@ app.post('/api/generate-asset', async (req, res) => {
         const transparentImage = transparentImageBuffer.toString('base64');
 
         console.log(`%cBackground removal successful for ${assetType}. Sending transparent image to frontend.`, 'color: green;');
-        // console.log(`[Backend Debug]: RAW BASE64 SENT (from ArrayBuffer conversion): ${transparentImage.substring(0, 100)}... (Length: ${transparentImage.length})`);
-
         if (!transparentImage) { return res.status(500).json({ success: false, error: 'No transparent image data received.' }); }
 
-        res.json({ success: true, image: transparentImage }); // Send single image in 'image' field
+        res.json({ success: true, image: transparentImage });
 
     } catch (error) {
         console.error('%cServer error during asset generation:', 'color: red;', error);
@@ -439,7 +421,6 @@ app.post('/api/generate-asset', async (req, res) => {
     }
 });
 
-// --- Segmind LLM Text Generation Route ---
 app.post('/api/generate-llm-text', async (req, res) => {
     const { prompt, gameId } = req.body;
 
@@ -457,8 +438,7 @@ app.post('/api/generate-llm-text', async (req, res) => {
     const llmPrompt = `
         You are an AI assistant specialized in generating game assets and settings based on user descriptions.
         The user wants to customize a game, described as: "${gameContext}".
-        Analyze the following user prompt and extract the requested details.
-
+        
         **Extract ONLY the following information into a JSON object:**
         1.  \`character_prompt\`: A concise, descriptive prompt for the **main game character or mole image**. Be specific and mention "game sprite" or "game character" and "transparent background" if appropriate for the asset type.
         2.  \`background_prompt\`: A concise, descriptive prompt for the **game's background image**. Be specific and mention "seamless game background" or "game environment".
@@ -497,19 +477,17 @@ app.post('/api/generate-llm-text', async (req, res) => {
 
     try {
         console.log('Calling Segmind LLM for prompt parsing (Claude 3 Haiku)...');
-        // --- UPDATED Segmind Endpoint for LLM (Claude 3 Haiku) ---
         const llmEndpoint = 'https://api.segmind.com/v1/claude-3-haiku';
         const llmResponse = await fetch(llmEndpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-api-key': SEGMIND_API_KEY },
             body: JSON.stringify({
-                // Claude 3 Haiku payload structure based on your provided snippet
                 instruction: "Extract the requested game parameters and asset prompts into a JSON object as described. Do not include any other text or markdown.",
-                temperature: 0.1, // Adjust as needed
+                temperature: 0.1,
                 messages: [
                     {
                         role: 'user',
-                        content: llmPrompt // Send the generated prompt here
+                        content: llmPrompt
                     }
                 ]
             }),
@@ -522,9 +500,6 @@ app.post('/api/generate-llm-text', async (req, res) => {
         }
 
         const llmData = await llmResponse.json();
-        // Removed: console.log('Raw LLM Data from Claude 3 Haiku:', JSON.stringify(llmData, null, 2)); // Debugging line, can be removed
-
-        // --- FIX APPLIED HERE: Correctly access the LLM's text output ---
         let llmOutputText = '';
         if (llmData && Array.isArray(llmData.content) && llmData.content.length > 0 && llmData.content[0].type === 'text') {
             llmOutputText = llmData.content[0].text;
@@ -532,10 +507,7 @@ app.post('/api/generate-llm-text', async (req, res) => {
             console.error('Unexpected Claude 3 Haiku response structure. Missing expected text content:', llmData);
             return res.status(500).json({ success: false, error: 'LLM returned an unexpected response structure.' });
         }
-        // --- END FIX ---
 
-        // Attempt to extract JSON from the string, even if it has markdown
-        // This is good practice as LLMs can sometimes wrap JSON in ```json```
         const jsonMatch = llmOutputText.match(/```json\n([\s\S]*?)\n```/);
         if (jsonMatch && jsonMatch[1]) { llmOutputText = jsonMatch[1]; }
         
@@ -560,7 +532,6 @@ app.post('/api/generate-llm-text', async (req, res) => {
     }
 });
 
-// Serve static React build files in production (optional, if backend also serves frontend)
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(REACT_APP_ROOT_DIR, 'build')));
     app.get('*', (req, res) => {
@@ -568,40 +539,46 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// --- Utility function to determine where the asset should go inside the ZIP ---
 const getZipAssetPath = (originalFileName, gameId, assetKeyFromFrontend) => {
     const fileName = path.basename(originalFileName);
-    let targetPath = `assets/images/${fileName}`;
+    let targetPath = `assets/images/${fileName}`; // Default path within the game's folder in the zip
 
+    // Adjust path based on gameId and asset type if needed, relative to the game's root directory in the zip
+    // These paths must match where the game expects to find its assets.
     if (gameId === 'flappy-bird') {
+        // Flappy bird images are often in assets/images/
         targetPath = `assets/images/${fileName}`;
     } else if (gameId === 'Whack-A-Mole') {
-        if (assetKeyFromFrontend === 'moleCharacter' || assetKeyFromFrontend === 'ground') {
-            targetPath = `css/${fileName}`;
-        }
+        // Whack-A-Mole background and moles often referenced from CSS/JS, but typically live in the same directory as index.html
+        // For simplicity, let's put them in a dedicated 'exported_assets' folder or similar inside the game's root
+        targetPath = `exported_assets/${fileName}`; 
     } else if (gameId === 'speed-runner') {
+        // Speed Runner: character and background could go in 'assets', obstacles in 'assets/obstacles'
         if (assetKeyFromFrontend === 'character' || assetKeyFromFrontend === 'background') {
             targetPath = `assets/${fileName}`;
         } else if (assetKeyFromFrontend === 'obstacle') {
             targetPath = `assets/obstacles/${fileName}`;
         }
     } else if (gameId === 'simple-match-3') {
+        // Simple Match-3: background might be in root, gems in 'images'
         if (assetKeyFromFrontend === 'background') {
-            targetPath = `${fileName}`; // Background for simple-match-3 goes directly in root
+            targetPath = `${fileName}`; // Background for simple-match-3 might be directly in root
         } else if (assetKeyFromFrontend === 'gemSet') {
-            targetPath = `images/${fileName}`; // Gems for simple-match-3 go in 'images' folder
+            targetPath = `images/${fileName}`; // Gems for simple-match-3 typically go in 'images' folder
         }
     } else if (gameId === 'crossy-road') {
+        // Crossy Road images often in 'images' folder
         targetPath = `images/${fileName}`;
     }
     return targetPath;
 };
 
-// Start the server
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Project Root Dir: ${PROJECT_ROOT_DIR}`);
     console.log(`React App Root Dir: ${REACT_APP_ROOT_DIR}`);
     console.log(`Games Dir: ${GAMES_DIR}`);
-    console.log(`AI Assets Dir: ${AI_ASSETS_DIR}`);
+    console.log(`Temp Export Dir: ${TEMP_EXPORT_DIR}`);
+    console.log(`Temp Uploaded AI Assets Dir: ${TEMP_ASSET_UPLOAD_DIR}`);
 });
