@@ -37,7 +37,7 @@ const gameConfigs = {
     ],
     aiAssets: [
       { type: 'moleCharacter', label: 'Mole Character', promptPlaceholder: 'e.g., a fluffy purple monster mole', defaultAssetPath: '/games/Whack-A-Mole/assets/mole.png' },
-      { type: 'hammer', label: 'Hammer/Mallet', promptPlaceholder: 'e.g., a golden cartoon hammer', defaultAssetPath: '/games/Whack-A-Mole/assets/hammer.png' },
+    
       { type: 'ground', label: 'Ground Texture', promptPlaceholder: 'e.g., muddy farm ground with flowers', defaultAssetPath: '/games/Whack-A-Mole/assets/ground.png' },
     ],
     difficultyPresets: {

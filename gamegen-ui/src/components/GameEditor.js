@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const userSessionId = uuidv4(); // This generates a unique ID for the user's session
 
@@ -218,10 +219,11 @@ export default function GameEditor({
     setLoadingAsset(assetType);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/generate-asset', {
+       const response = await axios.post(`${API_BASE_URL}/api/generate-asset`, {
         prompt: prompt,
         assetType: assetType,
       });
+
 
       // --- MODIFIED: Destructure 'urls' in addition to 'image' ---
       const { success, image, urls, error } = response.data; // Now expect 'urls' for gemSet
@@ -283,10 +285,11 @@ export default function GameEditor({
     try {
       // Step 1: Call Backend LLM for prompt parsing
       console.log('%cCalling backend LLM to parse prompt:', 'color: lightblue;', combinedAiPrompt);
-      const llmResponse = await axios.post('http://localhost:5000/api/generate-llm-text', {
+      const llmResponse = await axios.post(`${API_BASE_URL}/api/generate-llm-text`, {
         prompt: combinedAiPrompt,
         gameId: gameId // Pass gameId for LLM context
       });
+
       const { success: llmSuccess, data: llmParsedData, error: llmError } = llmResponse.data;
 
       if (!llmSuccess) {
@@ -397,13 +400,14 @@ export default function GameEditor({
     console.log("%cCurrent AI Assets (to be sent as aiAssetPaths):", 'color: yellow;', currentAssets);
 
     try {
-        const response = await axios.post(`http://localhost:5000/api/export/${gameId}`, {
-            gameParameters: gameSettings, // Sending gameSettings as gameParameters
-            aiAssetPaths: currentAssets, // Sending currentAssets as aiAssetPaths
-            userSessionId: userSessionId, // Unique session ID for temp file naming
+        const response = await axios.post(`${API_BASE_URL}/api/export/${gameId}`, {
+            gameParameters: gameSettings,      // Sending gameSettings as gameParameters
+            aiAssetPaths: currentAssets,       // Sending currentAssets as aiAssetPaths
+            userSessionId: userSessionId,      // Unique session ID for temp file naming
         }, {
-            responseType: 'blob', // IMPORTANT: This tells Axios to expect a binary response (the zip file)
+            responseType: 'blob',               // Tell Axios to expect a binary response (zip file)
         });
+
 
         // Create a URL for the blob and trigger download
         const url = window.URL.createObjectURL(new Blob([response.data]));

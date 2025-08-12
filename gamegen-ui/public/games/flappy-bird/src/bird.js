@@ -84,8 +84,8 @@ export class Bird {
         // MODIFIED: Use the EXPORTED_BIRD_IMAGE global if available, else fallback to default.
         // This ensures the exported game picks up the AI-generated bird.
         this.#isAnimatedAsset = false;
-        const defaultBirdWidth = 43; 
-        const defaultBirdHeight = 30; 
+        const defaultBirdWidth = 50; 
+        const defaultBirdHeight = 36; 
         try {
             // Check if EXPORTED_CURRENT_ASSETS (which contains EXPORTED_BIRD_IMAGE) is defined
             // and if character asset is available, use it. Otherwise, use the default path.
@@ -144,8 +144,8 @@ export class Bird {
             console.error("[Bird.js Debug]: Error clearing background image styles:", e);
         }
 
-        const defaultBirdWidth = 43; 
-        const defaultBirdHeight = 30; 
+        const defaultBirdWidth = 50; 
+        const defaultBirdHeight = 36; 
         let finalImageUrl = null; 
 
         if (assetData && typeof assetData === 'object' && assetData.isAnimated) { 

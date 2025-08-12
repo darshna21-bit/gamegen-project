@@ -1,4 +1,14 @@
 /* style.css */
+/* Add this block at the very top of your style.css file */
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Keeps scrollbars from appearing */
+    background-color: #1a202c; /* This is a dark gray, matching your editor's theme */
+    /* You can also use 'black' if you prefer: background-color: black; */
+}
+
+/* Your existing styles follow below this block */
 * {
     margin: 0;
     padding: 0;
