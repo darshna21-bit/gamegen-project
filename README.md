@@ -1,5 +1,35 @@
 # GenPlay Studio!  
 **Empowering Everyone to Create Personalized HTML5 Games with AI**
+ ## 🔍Preview
+Here’s a glimpse of **GenPlay Studio** in action:
+<table style="width:100%;">
+  <tr>
+    <td align="center">
+      <img src="images/IMG1.jpg" alt="Home Screen" width="400">
+      <br>
+      <em>Home Screen</em>
+    </td>
+    <td align="center">
+      <img src="images/IMG2.jpg" alt="Game Template Selector" width="400">
+      <br>
+      <em>Game Template Selector</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="images/IMG3.jpg" alt="AI Customization" width="400">
+      <br>
+      <em>AI Customization</em>
+    </td>
+    <td align="center">
+      <img src="images/IMG4.jpg" alt="Game Ready for Export" width="400">
+      <br>
+      <em>Exported Game Ready for Export</em>
+    </td>
+  </tr>
+</table>
+
+
 
 ---
 
