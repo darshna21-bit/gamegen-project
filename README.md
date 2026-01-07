@@ -1,5 +1,10 @@
 # GenPlay Studio!  
 **Empowering Everyone to Create Personalized HTML5 Games with AI**
+## 🎥 Video Demo
+
+▶️ Watch the full demo here:  
+https://drive.google.com/file/d/1FsWm0KvErW2IhR797_loa6GnQJdJ4mLx/view?usp=sharing
+
  ## 🔍Preview
 Here’s a glimpse of **GenPlay Studio** in action:
 <table style="width:100%;">
